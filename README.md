@@ -30,7 +30,6 @@
         "threads": 10,              // Количество потоков
         "keys_file": "data/keys_and_addresses.txt",
         "proxy_file": "data/proxys.txt",
-        "min_balance": 0.01         // Минимальный баланс
     },
     "capmonster": {
         "enabled": true,            // Включить capmonster для решения капчи
