@@ -240,7 +240,7 @@ class TournamentManager:
         cards = self.fetch_player_cards(wallet_address, token, account_number)
         
         if not cards:
-            error_log(f"No cards available for account {account_number}")
+            info_log(f"No cards available for account {account_number}")
             return {t_type: False for t_type in tournament_ids.keys()}
         
         used_card_ids = []
