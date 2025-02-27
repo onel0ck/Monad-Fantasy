@@ -70,6 +70,28 @@
 }
 ```
 
+Вот все "onboarding_quest":
+```
+"onboarding_quest": {
+    "enabled": true,
+    "ids": [
+        "69e67d0a-0a08-4085-889f-58df15bdecb8",  // onboarding_signup - Регистрация
+        "767636d2-2477-4d4a-9308-5c2d43a75e02",  // onboarding_profile - Заполнение профиля
+        "7beb55de-8067-4680-b3ad-ac397b90a55c",  // onboarding_shop - Посещение магазина
+        "96e6f5f9-e187-4488-b8ee-61c412f7fa4b",  // onboarding_competition - Просмотр соревнований
+        "66387328-ff2a-46a9-acb7-846b466934b6",  // onboarding_pack_opening - Открытие пака
+        "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f",  // onboarding_deck - Создание колоды
+        "2a6ce72f-6352-487c-aa8b-29ba2d150259",  // onboarding_deposit - Депозит
+        "3681ad25-0130-4573-9235-1a658b3af60e",  // onboarding_wheel_share - Поделиться колесом
+        "4122dd9a-dc8f-4fab-970e-6de099673ab4",  // onboarding_free_tactic - Бесплатная тактика
+        "535272d6-fbca-44c2-abf3-2c7316dc8f4c",  // onboarding_tactic - Тактика
+        "94484d32-aabf-47d0-a412-c5d0dfefeb44",  // onboarding_wheel_deposit - Депозит для колеса
+        "94807dbb-24fe-4055-986d-efd6212d28d5",  // onboarding_share - Поделиться
+        "db5afa98-90fe-4e9c-9034-3fe1cf72683a",  // onboarding_wheel_free_tactic - Бесплатная тактика через колесо
+        "e2f80666-40fe-47a5-804a-35646407312a"   // onboarding_gift - Подарок
+    ]
+}
+```
 ## Использование
 Запустите скрипт командой:
 ```
