@@ -1,6 +1,6 @@
 {
     "app": {
-        "threads": 10,
+        "threads": 5,
         "keys_file": "data/keys_and_addresses.txt",
         "proxy_file": "data/proxys.txt",
         "success_file": "logs/success_accounts.txt",
@@ -52,15 +52,40 @@
         ]
     },
     "daily": {
-        "enabled": true
+        "enabled": false
     },
     "fragments": {
         "enabled": false,
         "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
     "onboarding_quest": {
-        "enabled": true,
+        "enabled": false,
         "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
-    "info_check": false
+    "info_check": false,
+    "tournaments": {
+        "enabled": true,
+        "types": {
+            "bronze": {
+                "enabled": true,
+                "id": "a5a63d39-756f-4d6e-9796-0d9fc46b8d1f",
+                "max_stars": 18
+            },
+            "silver": {
+                "enabled": true,
+                "id": "", 
+                "max_stars": 23
+            },
+            "gold": {
+                "enabled": false,
+                "id": "",
+                "max_stars": 25
+            },
+            "elite": {
+                "enabled": false,
+                "id": "",
+                "max_stars": 999
+            }
+        }
+    }
 }
