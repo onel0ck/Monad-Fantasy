@@ -13,7 +13,7 @@ from src.utils import error_log, info_log, success_log, rate_limit_log
 from src.account_storage import AccountStorage
 
 class RetryManager:
-    def __init__(self, max_retries=5, success_threshold=0.9):
+    def __init__(self, max_retries=3, success_threshold=0.9):
         self.failed_accounts = set()
         self.success_accounts = set()
         self.attempt_counter = {}
@@ -150,7 +150,7 @@ class FantasyProcessor:
         self.retry_manager.add_failed_account(account_data)
 
     def process_account(self, account_number, private_key, wallet_address, total_accounts):
-        max_attempts = 7
+        max_attempts = 3
         account_data = (account_number, private_key, wallet_address)
         current_attempt = self.retry_manager.get_current_attempt(account_data)
         
@@ -218,10 +218,22 @@ class FantasyProcessor:
                     tasks_completed = True
                     
                     if self.config['onboarding_quest']['enabled']:
-                        onboarding_id = self.config['onboarding_quest']['id']
-                        onboarding_success = api.onboarding_quest_claim(token, wallet_address, account_number, onboarding_id)
-                        if not onboarding_success:
-                            info_log(f'Onboarding quest claim skipped or failed for account {account_number}')
+                        onboarding_ids = self.config['onboarding_quest'].get('ids', [])
+                        
+                        if 'id' in self.config['onboarding_quest']:
+                            single_id = self.config['onboarding_quest']['id']
+                            if single_id and single_id not in onboarding_ids:
+                                onboarding_ids.append(single_id)
+                        
+                        if not onboarding_ids:
+                            info_log(f'No onboarding quest IDs configured for account {account_number}')
+                        else:
+                            for onboarding_id in onboarding_ids:
+                                onboarding_success = api.onboarding_quest_claim(token, wallet_address, account_number, onboarding_id)
+                                if onboarding_success:
+                                    success_log(f"Successfully completed onboarding quest {onboarding_id} for account {account_number}")
+                                else:
+                                    info_log(f'Onboarding quest {onboarding_id} skipped or failed for account {account_number}')
 
                     if self.config['daily']['enabled']:
                         daily_success = api.daily_claim(token, wallet_address, account_number)
