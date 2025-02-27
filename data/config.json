@@ -59,8 +59,11 @@
         "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
     "onboarding_quest": {
-        "enabled": false,
-        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+        "enabled": true,
+        "ids": [
+            "66387328-ff2a-46a9-acb7-846b466934b6",
+            "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f"
+        ]
     },
     "info_check": false,
     "tournaments": {
