@@ -1,0 +1,66 @@
+{
+    "app": {
+        "threads": 10,
+        "keys_file": "data/keys_and_addresses.txt",
+        "proxy_file": "data/proxys.txt",
+        "success_file": "logs/success_accounts.txt",
+        "failure_file": "logs/failure_accounts.txt",
+        "result_file": "logs/result.txt",
+        "log_file": "logs/app.log",
+        "min_balance": 0.01,
+        "max_balance_checks": 30,
+        "balance_check_delay": 3,
+        "privy_app_id": "cm6ezzy660297zgdk7t3glcz5",
+        "privy_client_id": "client-WY5gEtuoV4UpG2Le3n5pt6QQD61Ztx62VDwtDCZeQc3sN",
+        "privy_ca_id": "c4c1258c-8ddb-4e96-83cd-caacbe1cf8a4"
+    },
+    "rpc": {
+        "url": "wss://ethereum-rpc.publicnode.com"
+    },
+    "tactic": {
+        "enabled": false,
+        "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
+        "max_toggle_attempts": 15,
+        "delay_between_attempts": 2,
+        "old_account": false,
+        "decks": [
+            [7, 6, 5, 3, 2],
+            [7, 6, 5, 3, 2],
+            [6, 6, 5, 4, 2],
+            [7, 6, 5, 3, 2],
+            [7, 6, 6, 2, 2],
+            [6, 6, 5, 4, 2],
+            [6, 5, 5, 5, 2],
+            [6, 6, 5, 3, 3],
+            [7, 6, 4, 3, 3],
+            [6, 5, 5, 3, 3]
+        ]
+    },
+    "capmonster": {
+        "enabled": true,
+        "api_key": "your_key"
+    },
+    "anticaptcha": {
+        "enabled": false,
+        "api_key": "your-anticaptcha-key"
+    },
+    "quest": {
+        "enabled": false,
+        "ids": [
+            "ea7c4f8a-0db8-4a9d-a840-5f76cfb1fad5",
+            "ba57e629-9aee-4a2b-a02c-14713725f941"
+        ]
+    },
+    "daily": {
+        "enabled": true
+    },
+    "fragments": {
+        "enabled": false,
+        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+    },
+    "onboarding_quest": {
+        "enabled": true,
+        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+    },
+    "info_check": false
+}
