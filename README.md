@@ -4,7 +4,7 @@
 ## Contacts
 * Telegram Channel: [unluck_1l0ck](https://t.me/unluck_1l0ck)
 * Telegram: @one_lock
-* Twitter/X: @1l0ck
+* Twitter/X: [@1l0ck](https://x.com/1l0ck)
 
 ## Описание
 Данный скрипт автоматизирует процессы авторизации и выполнения ежедневных заданий для множества аккаунтов Fantasy. Основные функции:
