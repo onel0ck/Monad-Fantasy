@@ -259,6 +259,29 @@ class FantasyProcessor:
                                 sleep(2)
                                 continue
                             tasks_completed = False
+
+                    if self.config.get('tournaments', {}).get('enabled', False):
+                        from src.tournament_manager import TournamentManager
+                        tournament_manager = TournamentManager(api, self.config)
+                        
+                        tournament_ids = {}
+                        for t_type, t_config in self.config['tournaments']['types'].items():
+                            if t_config.get('enabled', False) and t_config.get('id'):
+                                tournament_ids[t_type] = t_config['id']
+                        
+                        if tournament_ids:
+                            info_log(f"Registering account {account_number} in tournaments: {', '.join(tournament_ids.keys())}")
+                            tournament_results = tournament_manager.register_in_tournaments(
+                                token, wallet_address, account_number, tournament_ids
+                            )
+                            
+                            success_tournaments = [t_type for t_type, result in tournament_results.items() if result]
+                            if success_tournaments:
+                                success_log(f"Account {account_number}: Successfully registered in {', '.join(success_tournaments)} tournaments")
+                            
+                            failed_tournaments = [t_type for t_type, result in tournament_results.items() if not result]
+                            if failed_tournaments:
+                                info_log(f"Account {account_number}: Failed to register in {', '.join(failed_tournaments)} tournaments")
                     
                     if tasks_completed:
                         self._write_success(private_key, wallet_address)
@@ -297,7 +320,6 @@ class FantasyProcessor:
         self._write_failure(private_key, wallet_address)
         self.retry_manager.add_failed_account(account_data)
         return False
-
 
     def retry_failed_accounts(self):
         while self.retry_manager.should_continue_retrying():
