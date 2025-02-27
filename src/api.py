@@ -206,7 +206,7 @@ class FantasyAPI:
         return self.captcha_pool.get_token()
 
     def login(self, private_key, wallet_address, account_number):
-        max_retries = 15
+        max_retries = 3
         retry_delay = 2
         captcha_token = None
         
@@ -370,7 +370,7 @@ class FantasyAPI:
             return False
 
     def daily_claim(self, token, wallet_address, account_number):
-        max_retries = 5
+        max_retries = 2
         retry_delay = 1
         
         privy_id_token = None
