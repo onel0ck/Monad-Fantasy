@@ -658,55 +658,113 @@ class FantasyAPI:
 
     def info(self, token, wallet_address, account_number):
         try:
+            privy_id_token = None
+            for cookie in self.session.cookies:
+                if cookie.name == 'privy-id-token':
+                    privy_id_token = cookie.value
+                    break
+            
+            auth_token = privy_id_token if privy_id_token else token
+            
             headers = {
                 'Accept': 'application/json, text/plain, */*',
-                'Authorization': f'Bearer {token}',
+                'Authorization': f'Bearer {auth_token}',
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
-                'User-Agent': self.user_agent
+                'User-Agent': self.user_agent,
+                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"'
             }
 
+            url = f'https://secret-api.fantasy.top/player/basic-data/{wallet_address}'
+            
             response = self.session.get(
-                f'{self.base_url}/player/basic-data/{wallet_address}',
+                url,
                 headers=headers,
-                proxies=self.proxies
+                proxies=self.proxies,
+                timeout=10
             )
 
             if response.status_code == 200:
                 data = response.json()
                 player_data = data.get('players_by_pk', {})
-                rewards_status = "true" if data.get('rewards', []) else "false"
+                rewards_status = len(data.get('rewards', []))
+                
+                fantasy_points = player_data.get('fantasy_points', 0)
+                fragments = player_data.get('fragments', 0)
+                is_onboarding_done = player_data.get('is_onboarding_done', False)
+                portfolio_value = player_data.get('portfolio_value', '0')
+                whitelist_tickets = player_data.get('whitelist_tickets', 0)
+                number_of_cards = player_data.get('number_of_cards', 0)
+                total_gliding_score = player_data.get('total_gliding_score', 0)
+                gold_value = player_data.get('gold', '0')
                 
                 result_file = self.config['app']['result_file']
-                existing_addresses = set()
+                existing_data = {}
+                
                 if os.path.exists(result_file):
                     with open(result_file, 'r', encoding='utf-8') as f:
                         for line in f:
-                            addr = line.split(':')[0]
-                            existing_addresses.add(addr)
-                
-                gold_value = player_data.get('gold', '0')
+                            parts = line.strip().split(':')
+                            if len(parts) > 0:
+                                addr = parts[0]
+                                existing_data[addr] = line.strip()
                 
                 result_line = (
                     f"{wallet_address}:"
                     f"stars={player_data.get('stars', 0)}:"
                     f'gold="{gold_value}":'
-                    f"portfolio_value={player_data.get('portfolio_value', 'None')}:"
-                    f"number_of_cards={player_data.get('number_of_cards', '0')}:"
-                    f"fantasy_points={player_data.get('fantasy_points', 0)}:"
+                    f"portfolio_value={portfolio_value}:"
+                    f"number_of_cards={number_of_cards}:"
+                    f"fantasy_points={fantasy_points}:"
+                    f"fragments={fragments}:"
+                    f"onboarding_done={is_onboarding_done}:"
+                    f"whitelist_tickets={whitelist_tickets}:"
+                    f"gliding_score={total_gliding_score:.2f}:"
                     f"rewards={rewards_status}"
                 )
 
-                if wallet_address not in existing_addresses:
-                    with open(result_file, 'a', encoding='utf-8') as f:
+                with open(result_file, 'a+', encoding='utf-8') as f:
+                    if wallet_address not in existing_data:
                         f.write(result_line + '\n')
+                    else:
+                        update_file = "logs/updated_results.txt"
+                        with open(update_file, 'a+', encoding='utf-8') as update_f:
+                            update_f.write(result_line + '\n')
 
-                success_log(f"Info collected for account {account_number}: {wallet_address}")
+                success_log(
+                    f"Info collected for account {account_number}: {wallet_address} | "
+                    f"fMON:{fantasy_points}, Cards:{number_of_cards}, "
+                    f"Portfolio:{portfolio_value}, Onboarding:{is_onboarding_done}"
+                )
                 return True
-                
+                    
             elif response.status_code == 429:
                 info_log(f'Rate limit on info check for account {account_number}, retrying...')
                 return "429"
+            elif response.status_code == 401:
+                if auth_token == privy_id_token and token:
+                    auth_token = token
+                    headers['Authorization'] = f'Bearer {auth_token}'
+                    retry_response = self.session.get(
+                        url,
+                        headers=headers,
+                        proxies=self.proxies,
+                        timeout=10
+                    )
+                    
+                    if retry_response.status_code == 200:
+                        retry_data = retry_response.json()
+                        return self._process_info_data(retry_data, wallet_address, account_number)
+                
+                account_data = self.account_storage.get_account_data(wallet_address)
+                if account_data:
+                    auth_data = self.login(account_data["private_key"], wallet_address, account_number)
+                    if auth_data:
+                        new_token = self.get_token(auth_data, wallet_address, account_number)
+                        if new_token:
+                            return self.info(new_token, wallet_address, account_number)
 
             error_log(f'Error getting info for account {account_number}: {response.status_code}')
             return False
