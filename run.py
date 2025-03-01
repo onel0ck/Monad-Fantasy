@@ -11,7 +11,8 @@ from src.utils import (
     countdown_timer,
     read_user_agents,
     error_log,
-    info_log
+    info_log,
+    validate_tournament_config  # Добавлен импорт функции
 )
 from src.main import FantasyProcessor
 
@@ -69,6 +70,8 @@ def main():
         start_countdown(delay_seconds)
         
         config = load_config()
+        config = validate_tournament_config(config)
+        
         proxies_dict, all_proxies = read_proxies(config['app']['proxy_file'])
         user_agents_cycle = read_user_agents()
         accounts = read_accounts(config['app']['keys_file'])
