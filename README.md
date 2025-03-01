@@ -29,6 +29,7 @@
     "app": {
         "threads": 10,              // Количество потоков
     },
+    "info_check": true,             // Собирать информацию об аккаунте result.txt
     "capmonster": {
         "enabled": true,            // Включить capmonster для решения капчи
         "api_key": "your-api-key"   // Ваш API ключ Capmonster
