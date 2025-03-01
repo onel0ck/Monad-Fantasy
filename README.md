@@ -112,6 +112,10 @@ source venv/bin/activate  # Linux/Mac
 ```bash
 pip install -r requirements.txt
 ```
+## Запуск
+```bash
+python run.py
+```
 При запуске вы можете указать задержку перед началом в секундах.
 
 ## Потоки
