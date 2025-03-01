@@ -96,8 +96,8 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/fantasy-manager.git
-cd fantasy-manager
+git clone https://github.com/onel0ck/Monad-Fantasy
+cd Monad-Fantasy
 ```
 
 2. Create virtual environment:
