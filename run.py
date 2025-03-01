@@ -33,6 +33,11 @@ def get_start_delay():
     while True:
         try:
             delay = input(f"\n{Fore.YELLOW}Enter delay before start (in seconds): {Fore.RESET}")
+            # Безопасная конвертация в целое число с проверкой
+            if not delay.strip():
+                print(f"{Fore.RED}Please enter a number{Fore.RESET}")
+                continue
+                
             seconds = int(delay)
             if seconds < 0:
                 print(f"{Fore.RED}Please enter a positive number{Fore.RESET}")
@@ -84,12 +89,35 @@ def main():
             user_agents_cycle=user_agents_cycle
         )
 
-        processor.process_accounts_in_batches(accounts, total_accounts)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=config['app']['threads']) as executor:
+            futures = []
+            for account_number, account_data in accounts:
+                if len(account_data) != 2:
+                    error_log(f"Invalid account data format for account {account_number}")
+                    continue
+                    
+                private_key, wallet_address = account_data
+                future = executor.submit(
+                    processor.process_account_with_retry,
+                    account_number,
+                    private_key,
+                    wallet_address,
+                    total_accounts
+                )
+                futures.append(future)
+
+            concurrent.futures.wait(futures)
 
         processor.retry_failed_accounts()
 
         final_success_rate = processor.retry_manager.get_success_rate() * 100
         info_log(f"Final success rate: {final_success_rate:.2f}%")
+
+        completed_quests_count = len(processor.completed_quests)
+        info_log(f"Total quests completed: {completed_quests_count}")
+        
+        successful_accounts = len(processor.retry_manager.success_accounts)
+        info_log(f"Successfully processed accounts: {successful_accounts} / {total_accounts} ({successful_accounts/total_accounts*100:.2f}%)")
 
     except KeyboardInterrupt:
         print(f"\n{Fore.RED}Script interrupted by user")
