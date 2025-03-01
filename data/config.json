@@ -1,6 +1,5 @@
 {
     "app": {
-        "batch_size": 5,
         "threads": 5,
         "keys_file": "data/keys_and_addresses.txt",
         "proxy_file": "data/proxys.txt",
@@ -20,7 +19,7 @@
     },
     "tactic": {
         "enabled": false,
-        "id": "",
+        "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
         "max_toggle_attempts": 15,
         "delay_between_attempts": 2,
         "old_account": false,
@@ -48,8 +47,8 @@
     "quest": {
         "enabled": false,
         "ids": [
-            "",
-            ""
+            "ea7c4f8a-0db8-4a9d-a840-5f76cfb1fad5",
+            "ba57e629-9aee-4a2b-a02c-14713725f941"
         ]
     },
     "daily": {
@@ -57,7 +56,7 @@
     },
     "fragments": {
         "enabled": false,
-        "id": ""
+        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
     "onboarding_quest": {
         "enabled": true,
@@ -84,7 +83,7 @@
         "types": {
             "bronze": {
                 "enabled": false,
-                "id": "",
+                "id": "a5a63d39-756f-4d6e-9796-0d9fc46b8d1f",
                 "max_stars": 18
             },
             "silver": {
