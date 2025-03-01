@@ -106,23 +106,40 @@ class TournamentManager:
             error_log(f"Error fetching cards for account {account_number}: {str(e)}")
             return []
     
+
     def select_best_cards_for_tournament(self, cards: List[Dict], max_stars: int, used_card_ids: List[str]) -> Tuple[List[Dict], int]:
-        available_cards = [card for card in cards if card['id'] not in used_card_ids]
-        
-        if len(available_cards) < 5:
+        try:
+            available_cards = [card for card in cards if card['id'] not in used_card_ids]
+            
+            if len(available_cards) < 5:
+                return [], 0
+                
+            def get_stars_safe(card):
+                try:
+                    return int(card.get('heroes', {}).get('stars', 0))
+                except (ValueError, TypeError):
+                    return 0
+                    
+            sorted_cards = sorted(available_cards, key=get_stars_safe, reverse=True)
+            
+            best_selection = self._find_optimal_card_selection(sorted_cards, max_stars)
+            
+            if not best_selection or len(best_selection) < 5:
+                sorted_by_stars_asc = sorted(available_cards, key=get_stars_safe)
+                best_selection = sorted_by_stars_asc[:5]
+            
+            total_stars = 0
+            for card in best_selection:
+                try:
+                    total_stars += int(card.get('heroes', {}).get('stars', 0))
+                except (ValueError, TypeError):
+                    pass
+                
+            return best_selection, total_stars
+            
+        except Exception as e:
+            error_log(f"Error in select_best_cards_for_tournament: {str(e)}")
             return [], 0
-            
-        sorted_cards = sorted(available_cards, key=lambda x: (x.get('heroes', {}).get('stars', 0)), reverse=True)
-        
-        best_selection = self._find_optimal_card_selection(sorted_cards, max_stars)
-        
-        if not best_selection:
-            sorted_by_stars_asc = sorted(available_cards, key=lambda x: (x.get('heroes', {}).get('stars', 0)))
-            best_selection = sorted_by_stars_asc[:5]
-            
-        total_stars = sum(card.get('heroes', {}).get('stars', 0) for card in best_selection)
-        
-        return best_selection, total_stars
     
     def _find_optimal_card_selection(self, sorted_cards: List[Dict], max_stars: int) -> List[Dict]:
         if len(sorted_cards) < 5:
@@ -132,7 +149,11 @@ class TournamentManager:
         total_stars = 0
         
         for card in sorted_cards:
-            card_stars = card.get('heroes', {}).get('stars', 0)
+            try:
+                card_stars = int(card.get('heroes', {}).get('stars', 0))
+            except (ValueError, TypeError):
+                card_stars = 0
+                
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
                 total_stars += card_stars
@@ -145,12 +166,30 @@ class TournamentManager:
         selected = []
         total_stars = 0
         
-        value_sorted = sorted(sorted_cards, 
-                            key=lambda x: x.get('card_weighted_score', 0) / max(x.get('heroes', {}).get('stars', 1), 1), 
-                            reverse=True)
+        value_sorted = []
+        for card in sorted_cards:
+            try:
+                stars = int(card.get('heroes', {}).get('stars', 1))
+                if stars <= 0:
+                    stars = 1
+                    
+                weighted_score = float(card.get('card_weighted_score', 0))
+                ratio = weighted_score / stars
+                
+                value_sorted.append((card, ratio))
+            except (ValueError, TypeError):
+                value_sorted.append((card, 0))
         
-        for card in value_sorted:
-            card_stars = card.get('heroes', {}).get('stars', 0)
+        value_sorted.sort(key=lambda x: x[1], reverse=True)
+        
+        sorted_by_value = [item[0] for item in value_sorted]
+        
+        for card in sorted_by_value:
+            try:
+                card_stars = int(card.get('heroes', {}).get('stars', 0))
+            except (ValueError, TypeError):
+                card_stars = 0
+                
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
                 total_stars += card_stars
@@ -160,7 +199,12 @@ class TournamentManager:
         if len(selected) == 5:
             return selected
             
-        return sorted(sorted_cards, key=lambda x: x.get('heroes', {}).get('stars', 0))[:5]
+        try:
+            sorted_by_stars = sorted(sorted_cards, 
+                                    key=lambda x: int(x.get('heroes', {}).get('stars', 0)))
+            return sorted_by_stars[:5]
+        except (ValueError, TypeError):
+            return sorted_cards[:5]
     
     def register_for_tournament(self, token: str, wallet_address: str, account_number: int, 
                                tournament_id: str, card_ids: List[str], deck_number: int = 1) -> bool:
