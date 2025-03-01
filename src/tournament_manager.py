@@ -128,11 +128,20 @@ class TournamentManager:
         if len(sorted_cards) < 5:
             return []
             
+        def get_card_stars(card):
+            stars = card.get('heroes', {}).get('stars', 0)
+            if isinstance(stars, str):
+                try:
+                    return int(stars)
+                except ValueError:
+                    return 0
+            return stars
+        
         selected = []
         total_stars = 0
         
         for card in sorted_cards:
-            card_stars = card.get('heroes', {}).get('stars', 0)
+            card_stars = get_card_stars(card)
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
                 total_stars += card_stars
@@ -145,12 +154,25 @@ class TournamentManager:
         selected = []
         total_stars = 0
         
-        value_sorted = sorted(sorted_cards, 
-                            key=lambda x: x.get('card_weighted_score', 0) / max(x.get('heroes', {}).get('stars', 1), 1), 
-                            reverse=True)
+        value_cards = []
+        for card in sorted_cards:
+            card_stars = get_card_stars(card)
+            if card_stars == 0:
+                card_stars = 1
+                
+            score = card.get('card_weighted_score', 0)
+            if isinstance(score, str):
+                try:
+                    score = float(score)
+                except ValueError:
+                    score = 0
+                    
+            value_cards.append((card, score / card_stars))
         
-        for card in value_sorted:
-            card_stars = card.get('heroes', {}).get('stars', 0)
+        value_cards.sort(key=lambda x: x[1], reverse=True)
+        
+        for card, _ in value_cards:
+            card_stars = get_card_stars(card)
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
                 total_stars += card_stars
@@ -159,8 +181,9 @@ class TournamentManager:
         
         if len(selected) == 5:
             return selected
-            
-        return sorted(sorted_cards, key=lambda x: x.get('heroes', {}).get('stars', 0))[:5]
+        
+        sorted_by_stars = sorted(sorted_cards, key=get_card_stars)
+        return sorted_by_stars[:5]
     
     def register_for_tournament(self, token: str, wallet_address: str, account_number: int, 
                                tournament_id: str, card_ids: List[str]) -> bool:
