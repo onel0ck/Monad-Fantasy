@@ -1,7 +1,7 @@
 {
     "app": {
-        "batch_size": 10,
-        "threads": 10,
+        "batch_size": 5,
+        "threads": 5,
         "keys_file": "data/keys_and_addresses.txt",
         "proxy_file": "data/proxys.txt",
         "success_file": "logs/success_accounts.txt",
