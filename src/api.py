@@ -483,7 +483,6 @@ class FantasyAPI:
                 error_log(f'Daily claim error for account {account_number}: {str(e)}')
                 return False
 
-
     def onboarding_quest_claim(self, token, wallet_address, account_number, quest_id):
         try:
             privy_id_token = None
@@ -539,7 +538,6 @@ class FantasyAPI:
                             return self.onboarding_quest_claim(new_token, wallet_address, account_number, quest_id)
 
             if response.status_code == 201:
-                success_log(f'Successfully completed onboarding quest {quest_id} for account {account_number}: {wallet_address}')
                 return True
 
             error_log(f'Onboarding quest claim failed for account {account_number}: {response.status_code}')
@@ -689,17 +687,27 @@ class FantasyAPI:
 
             if response.status_code == 200:
                 data = response.json()
+                
+                if 'players_by_pk' not in data:
+                    error_log(f"Unexpected response structure for account {account_number}: missing 'players_by_pk'")
+                    return False
+                    
                 player_data = data.get('players_by_pk', {})
                 rewards_status = len(data.get('rewards', []))
                 
                 fantasy_points = player_data.get('fantasy_points', 0)
                 fragments = player_data.get('fragments', 0)
-                is_onboarding_done = player_data.get('is_onboarding_done', False)
-                portfolio_value = player_data.get('portfolio_value', '0')
-                whitelist_tickets = player_data.get('whitelist_tickets', 0)
-                number_of_cards = player_data.get('number_of_cards', 0)
-                total_gliding_score = player_data.get('total_gliding_score', 0)
-                gold_value = player_data.get('gold', '0')
+                is_onboarding_done = bool(player_data.get('is_onboarding_done', False))
+                portfolio_value = str(player_data.get('portfolio_value', '0'))
+                whitelist_tickets = int(player_data.get('whitelist_tickets', 0))
+                number_of_cards = int(player_data.get('number_of_cards', 0))
+                
+                try:
+                    total_gliding_score = float(player_data.get('total_gliding_score', 0))
+                except (ValueError, TypeError):
+                    total_gliding_score = 0.0
+                    
+                gold_value = str(player_data.get('gold', '0'))
                 
                 result_file = self.config['app']['result_file']
                 existing_data = {}
@@ -726,10 +734,13 @@ class FantasyAPI:
                     f"rewards={rewards_status}"
                 )
 
+                os.makedirs("logs", exist_ok=True)
+                
                 with open(result_file, 'a+', encoding='utf-8') as f:
                     if wallet_address not in existing_data:
                         f.write(result_line + '\n')
                     else:
+                        os.makedirs(os.path.dirname("logs/updated_results.txt"), exist_ok=True)
                         update_file = "logs/updated_results.txt"
                         with open(update_file, 'a+', encoding='utf-8') as update_f:
                             update_f.write(result_line + '\n')
@@ -756,12 +767,13 @@ class FantasyAPI:
                     )
                     
                     if retry_response.status_code == 200:
-                        retry_data = retry_response.json()
-                        return self._process_info_data(retry_data, wallet_address, account_number)
+                        return self.info(token, wallet_address, account_number)
                 
                 account_data = self.account_storage.get_account_data(wallet_address)
                 if account_data:
                     auth_data = self.login(account_data["private_key"], wallet_address, account_number)
+                    if isinstance(auth_data, str) and "429" in auth_data:
+                        return "429"
                     if auth_data:
                         new_token = self.get_token(auth_data, wallet_address, account_number)
                         if new_token:
