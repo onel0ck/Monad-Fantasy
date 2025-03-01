@@ -84,24 +84,7 @@ def main():
             user_agents_cycle=user_agents_cycle
         )
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=config['app']['threads']) as executor:
-            futures = []
-            for account_number, account_data in accounts:
-                if len(account_data) != 2:
-                    error_log(f"Invalid account data format for account {account_number}")
-                    continue
-                    
-                private_key, wallet_address = account_data
-                future = executor.submit(
-                    processor.process_account_with_retry,
-                    account_number,
-                    private_key,
-                    wallet_address,
-                    total_accounts
-                )
-                futures.append(future)
-
-            concurrent.futures.wait(futures)
+        processor.process_accounts_in_batches(accounts, total_accounts)
 
         processor.retry_failed_accounts()
 
