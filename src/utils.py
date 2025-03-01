@@ -100,6 +100,34 @@ def countdown_timer(seconds):
         sleep(1)
     print(f"\r{Fore.GREEN}Starting now!" + " " * 20)
 
+def validate_tournament_config(config):
+    if not config.get('tournaments', {}).get('enabled', False):
+        return config
+    
+    tournament_types = config['tournaments']['types']
+    enabled_tournaments = []
+    
+    for t_type, t_config in tournament_types.items():
+        if t_config.get('enabled', False) and t_config.get('id'):
+            enabled_tournaments.append(t_type)
+    
+    if not enabled_tournaments:
+        info_log("No active tournaments found in configuration")
+        return config
+    
+    if len(enabled_tournaments) == 1:
+        info_log(f"Active tournament: {enabled_tournaments[0].capitalize()}")
+        return config
+    
+    primary_tournament = enabled_tournaments[0]
+    info_log(f"Multiple tournaments enabled. Using only: {primary_tournament.capitalize()}")
+    
+    for t_type in enabled_tournaments[1:]:
+        config['tournaments']['types'][t_type]['enabled'] = False
+        info_log(f"Disabled tournament: {t_type.capitalize()}")
+    
+    return config
+
 def get_user_agents():
     return [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
