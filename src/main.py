@@ -11,6 +11,7 @@ from colorama import Fore
 from src.api import FantasyAPI
 from src.utils import error_log, info_log, success_log, rate_limit_log
 from src.account_storage import AccountStorage
+from src.simple_proxy_manager import SimpleProxyManager
 
 class RetryManager:
     def __init__(self, max_retries=3, success_threshold=0.9):
@@ -111,6 +112,8 @@ class FantasyProcessor:
         self.retry_manager = RetryManager()
         self.retry_delay = 5
         self.max_proxy_retries = 5
+        self.proxy_manager = SimpleProxyManager(all_proxies, cooldown_period=90)
+
 
     def _wait_rate_limit(self, thread_id):
         current_time = time.time()
@@ -130,18 +133,40 @@ class FantasyProcessor:
         account_data = (account_number, private_key, wallet_address)
         proxy_retries = 0
         
+        import random
+        time.sleep(random.uniform(0.5, 3.0))
+        
         while proxy_retries < self.max_proxy_retries:
             try:
+                proxy, proxy_dict = self.proxy_manager.get_proxy()
+                self.proxies = proxy_dict
+                
                 success = self.process_account(account_number, private_key, wallet_address, total_accounts)
                 if success:
                     self.retry_manager.add_success_account(account_data)
+                    self.proxy_manager.remove_rate_limit(proxy)
                     return
+                    
                 proxy_retries += 1
-                sleep(2)
+                sleep_time = 2 + proxy_retries * 2 + random.uniform(0, 3)
+                info_log(f"Sleeping {sleep_time:.1f}s before retry for account {account_number}")
+                sleep(sleep_time)
+                
             except requests.exceptions.RequestException as e:
                 error_log(f"Network error for account {account_number}: {str(e)}")
+                
+                rate_limited = "429" in str(e)
+                connection_closed = "RemoteDisconnected" in str(e) or "ConnectionReset" in str(e)
+                
+                if rate_limited or connection_closed:
+                    if self.proxies.get('https'):
+                        self.proxy_manager.mark_rate_limited(self.proxies.get('https'))
+                
                 proxy_retries += 1
-                sleep(2)
+                sleep_time = 3 + proxy_retries * 3 + random.uniform(1, 5)
+                info_log(f"Sleeping {sleep_time:.1f}s after network error for account {account_number}")
+                sleep(sleep_time)
+                
             except Exception as e:
                 error_log(f"Error processing account {account_number}: {str(e)}")
                 self.retry_manager.add_failed_account(account_data)
@@ -230,9 +255,7 @@ class FantasyProcessor:
                         else:
                             for onboarding_id in onboarding_ids:
                                 onboarding_success = api.onboarding_quest_claim(token, wallet_address, account_number, onboarding_id)
-                                if onboarding_success:
-                                    success_log(f"Successfully completed onboarding quest {onboarding_id} for account {account_number}")
-                                else:
+                                if not onboarding_success:
                                     info_log(f'Onboarding quest {onboarding_id} skipped or failed for account {account_number}')
 
                     if self.config['daily']['enabled']:
@@ -422,3 +445,68 @@ class FantasyProcessor:
                     info_log(f'Wrote {wallet_address} to failure file')
             except Exception as e:
                 error_log(f'Error writing to failure file: {str(e)}')
+
+    def process_accounts_in_batches(self, accounts, total_accounts):
+        batch_size = self.config['app'].get('batch_size', 10)
+        
+        if batch_size >= total_accounts:
+            info_log(f"Processing all {total_accounts} accounts at once")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.config['app']['threads']) as executor:
+                futures = []
+                for account_number, account_data in accounts:
+                    if len(account_data) != 2:
+                        error_log(f"Invalid account data format for account {account_number}")
+                        continue
+                        
+                    private_key, wallet_address = account_data
+                    future = executor.submit(
+                        self.process_account_with_retry,
+                        account_number,
+                        private_key,
+                        wallet_address,
+                        total_accounts
+                    )
+                    futures.append(future)
+
+                concurrent.futures.wait(futures)
+            return
+        
+        batches = [accounts[i:i + batch_size] for i in range(0, len(accounts), batch_size)]
+        
+        info_log(f"Processing {total_accounts} accounts in {len(batches)} batches of up to {batch_size} accounts each")
+        
+        for batch_num, batch in enumerate(batches, 1):
+            info_log(f"Processing batch {batch_num}/{len(batches)} ({len(batch)} accounts)")
+            
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.config['app']['threads']) as executor:
+                futures = []
+                for account_number, account_data in batch:
+                    if len(account_data) != 2:
+                        error_log(f"Invalid account data format for account {account_number}")
+                        continue
+                        
+                    private_key, wallet_address = account_data
+                    future = executor.submit(
+                        self.process_account_with_retry,
+                        account_number,
+                        private_key,
+                        wallet_address,
+                        len(batch)
+                    )
+                    futures.append(future)
+
+                concurrent.futures.wait(futures)
+            
+            if batch_num < len(batches):
+                delay = min(15, 2 + batch_num * 2)
+                info_log(f"Waiting {delay} seconds before processing next batch...")
+                time.sleep(delay)
+
+        success_count = len(self.retry_manager.success_accounts)
+        failed_count = len(self.retry_manager.failed_accounts)
+        total_processed = success_count + failed_count
+        success_rate = (success_count / total_processed * 100) if total_processed > 0 else 0
+
+        info_log(f"Processed {total_processed} accounts:")
+        info_log(f"- Successful: {success_count} ({success_rate:.2f}%)")
+        info_log(f"- Failed: {failed_count} ({100 - success_rate:.2f}%)")
