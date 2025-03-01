@@ -27,7 +27,6 @@
 ```json
 {
     "app": {
-        "batch_size": 10,
         "threads": 10,              // Количество потоков
         "keys_file": "data/keys_and_addresses.txt",
         "proxy_file": "data/proxys.txt",
@@ -117,9 +116,6 @@ pip install -r requirements.txt
 python run.py
 ```
 При запуске вы можете указать задержку перед началом в секундах.
-
-## Потоки
-Если будете делать больше потоков, ставьте также и в "batch_size". "threads" = "batch_size"
 
 ## Отладка
 В файле `utils.py` можно изменить значение `DEBUG_MODE = True` для получения подробных логов. По умолчанию режим отладки отключен для минимизации вывода.
