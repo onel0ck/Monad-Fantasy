@@ -483,6 +483,7 @@ class FantasyAPI:
                 error_log(f'Daily claim error for account {account_number}: {str(e)}')
                 return False
 
+
     def onboarding_quest_claim(self, token, wallet_address, account_number, quest_id):
         try:
             privy_id_token = None
