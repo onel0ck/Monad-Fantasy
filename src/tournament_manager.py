@@ -128,20 +128,11 @@ class TournamentManager:
         if len(sorted_cards) < 5:
             return []
             
-        def get_card_stars(card):
-            stars = card.get('heroes', {}).get('stars', 0)
-            if isinstance(stars, str):
-                try:
-                    return int(stars)
-                except ValueError:
-                    return 0
-            return stars
-        
         selected = []
         total_stars = 0
         
         for card in sorted_cards:
-            card_stars = get_card_stars(card)
+            card_stars = card.get('heroes', {}).get('stars', 0)
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
                 total_stars += card_stars
@@ -154,25 +145,12 @@ class TournamentManager:
         selected = []
         total_stars = 0
         
-        value_cards = []
-        for card in sorted_cards:
-            card_stars = get_card_stars(card)
-            if card_stars == 0:
-                card_stars = 1
-                
-            score = card.get('card_weighted_score', 0)
-            if isinstance(score, str):
-                try:
-                    score = float(score)
-                except ValueError:
-                    score = 0
-                    
-            value_cards.append((card, score / card_stars))
+        value_sorted = sorted(sorted_cards, 
+                            key=lambda x: x.get('card_weighted_score', 0) / max(x.get('heroes', {}).get('stars', 1), 1), 
+                            reverse=True)
         
-        value_cards.sort(key=lambda x: x[1], reverse=True)
-        
-        for card, _ in value_cards:
-            card_stars = get_card_stars(card)
+        for card in value_sorted:
+            card_stars = card.get('heroes', {}).get('stars', 0)
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
                 total_stars += card_stars
@@ -181,12 +159,11 @@ class TournamentManager:
         
         if len(selected) == 5:
             return selected
-        
-        sorted_by_stars = sorted(sorted_cards, key=get_card_stars)
-        return sorted_by_stars[:5]
+            
+        return sorted(sorted_cards, key=lambda x: x.get('heroes', {}).get('stars', 0))[:5]
     
     def register_for_tournament(self, token: str, wallet_address: str, account_number: int, 
-                               tournament_id: str, card_ids: List[str]) -> bool:
+                               tournament_id: str, card_ids: List[str], deck_number: int = 1) -> bool:
         try:
             privy_id_token = None
             for cookie in self.api.session.cookies:
@@ -246,7 +223,7 @@ class TournamentManager:
                 )
             
             if response.status_code in [200, 201]:
-                success_log(f"Successfully registered account {account_number} in tournament {tournament_id}")
+                success_log(f"Successfully registered account {account_number} in tournament {tournament_id} (Deck #{deck_number})")
                 return True
                 
             error_log(f"Failed to register for tournament: {response.status_code}")
@@ -266,30 +243,43 @@ class TournamentManager:
             info_log(f"No cards available for account {account_number}")
             return {t_type: False for t_type in tournament_ids.keys()}
         
+        active_tournament_type = None
+        for t_type, t_id in tournament_ids.items():
+            if t_id:
+                active_tournament_type = t_type
+                break
+        
+        if not active_tournament_type:
+            info_log(f"No active tournament selected for account {account_number}")
+            return {}
+        
+        tournament_id = tournament_ids[active_tournament_type]
+        max_stars = self.tournament_types[active_tournament_type]["max_stars"]
+        
+        info_log(f"Attempting to register account {account_number} in {active_tournament_type.capitalize()} tournament")
+        
         used_card_ids = []
+        deck_number = 1
+        registration_successful = False
         
-        tournament_order = ["elite", "gold", "silver", "bronze"]
-        
-        for t_type in tournament_order:
-            if t_type not in tournament_ids or not tournament_ids[t_type]:
-                continue
-                
-            tournament_id = tournament_ids[t_type]
-            max_stars = self.tournament_types[t_type]["max_stars"]
-            
-            info_log(f"Attempting to register account {account_number} in {t_type.capitalize()} tournament")
-            
+        while True:
             selected_cards, total_stars = self.select_best_cards_for_tournament(cards, max_stars, used_card_ids)
             
             if len(selected_cards) < 5:
-                error_log(f"Not enough available cards for {t_type} tournament for account {account_number}")
-                results[t_type] = False
-                continue
+                if deck_number == 1:
+                    error_log(f"Not enough available cards for {active_tournament_type} tournament for account {account_number}")
+                    results[active_tournament_type] = False
+                else:
+                    info_log(f"No more complete decks available for {active_tournament_type} tournament (registered {deck_number-1} decks)")
+                break
                 
             if total_stars > max_stars:
-                error_log(f"Selected cards exceed star limit for {t_type} tournament: {total_stars} > {max_stars}")
-                results[t_type] = False
-                continue
+                if deck_number == 1:
+                    error_log(f"Selected cards exceed star limit for {active_tournament_type} tournament: {total_stars} > {max_stars}")
+                    results[active_tournament_type] = False
+                else:
+                    info_log(f"No more valid decks within star limit for {active_tournament_type} tournament")
+                break
                 
             card_ids = [card['id'] for card in selected_cards]
             
@@ -301,17 +291,23 @@ class TournamentManager:
                     stars = card.get('heroes', {}).get('stars', 0)
                     clean_card_info.append(f"{clean_name} ({stars}*)")
                 
-                info_log(f"Selected cards for {t_type} tournament (total {total_stars}*): {', '.join(clean_card_info)}")
+                info_log(f"Selected cards for {active_tournament_type} tournament deck #{deck_number} (total {total_stars}*): {', '.join(clean_card_info)}")
                 
-                success = self.register_for_tournament(token, wallet_address, account_number, tournament_id, card_ids)
+                success = self.register_for_tournament(token, wallet_address, account_number, tournament_id, card_ids, deck_number)
                 
                 if success:
                     used_card_ids.extend(card_ids)
-                    results[t_type] = True
+                    registration_successful = True
+                    deck_number += 1
                 else:
-                    results[t_type] = False
+                    if deck_number == 1:
+                        results[active_tournament_type] = False
+                    break
             except Exception as e:
-                error_log(f"Error registering for {t_type} tournament: {str(e)}")
-                results[t_type] = False
+                error_log(f"Error registering for {active_tournament_type} tournament: {str(e)}")
+                if deck_number == 1:
+                    results[active_tournament_type] = False
+                break
         
+        results[active_tournament_type] = registration_successful
         return results
