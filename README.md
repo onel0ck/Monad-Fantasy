@@ -92,10 +92,24 @@
     ]
 }
 ```
-## Использование
-Запустите скрипт командой:
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/fantasy-manager.git
+cd fantasy-manager
 ```
-python run.py
+
+2. Create virtual environment:
+```bash
+python -m venv venv
+venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux/Mac
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
 При запуске вы можете указать задержку перед началом в секундах.
 
