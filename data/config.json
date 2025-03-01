@@ -1,6 +1,7 @@
 {
     "app": {
-        "threads": 5,
+        "batch_size": 10,
+        "threads": 10,
         "keys_file": "data/keys_and_addresses.txt",
         "proxy_file": "data/proxys.txt",
         "success_file": "logs/success_accounts.txt",
@@ -19,7 +20,7 @@
     },
     "tactic": {
         "enabled": false,
-        "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
+        "id": "",
         "max_toggle_attempts": 15,
         "delay_between_attempts": 2,
         "old_account": false,
@@ -47,36 +48,48 @@
     "quest": {
         "enabled": false,
         "ids": [
-            "ea7c4f8a-0db8-4a9d-a840-5f76cfb1fad5",
-            "ba57e629-9aee-4a2b-a02c-14713725f941"
+            "",
+            ""
         ]
     },
     "daily": {
-        "enabled": false
+        "enabled": true
     },
     "fragments": {
         "enabled": false,
-        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+        "id": ""
     },
     "onboarding_quest": {
         "enabled": true,
         "ids": [
+            "69e67d0a-0a08-4085-889f-58df15bdecb8",
+            "767636d2-2477-4d4a-9308-5c2d43a75e02",
+            "7beb55de-8067-4680-b3ad-ac397b90a55c",
+            "96e6f5f9-e187-4488-b8ee-61c412f7fa4b",
             "66387328-ff2a-46a9-acb7-846b466934b6",
-            "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f"
+            "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f",
+            "2a6ce72f-6352-487c-aa8b-29ba2d150259",
+            "3681ad25-0130-4573-9235-1a658b3af60e",
+            "4122dd9a-dc8f-4fab-970e-6de099673ab4",
+            "535272d6-fbca-44c2-abf3-2c7316dc8f4c",
+            "94484d32-aabf-47d0-a412-c5d0dfefeb44",
+            "94807dbb-24fe-4055-986d-efd6212d28d5",
+            "db5afa98-90fe-4e9c-9034-3fe1cf72683a",
+            "e2f80666-40fe-47a5-804a-35646407312a"
         ]
     },
-    "info_check": false,
+    "info_check": true,
     "tournaments": {
         "enabled": true,
         "types": {
             "bronze": {
-                "enabled": true,
+                "enabled": false,
                 "id": "a5a63d39-756f-4d6e-9796-0d9fc46b8d1f",
                 "max_stars": 18
             },
             "silver": {
                 "enabled": true,
-                "id": "", 
+                "id": "fc0b4ca2-6d92-47ea-b0c0-1ca063ccb7b3", 
                 "max_stars": 23
             },
             "gold": {
