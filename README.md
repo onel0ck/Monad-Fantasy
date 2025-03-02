@@ -28,7 +28,7 @@
 ```json
 {
     "app": {
-        "threads": 10,              // Количество потоков
+        "threads": 5,              // Количество потоков
     },
     "rpc": {
         "url": "wss://ethereum-rpc.publicnode.com"   // RPC для Ethereum
