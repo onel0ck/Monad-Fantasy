@@ -40,12 +40,12 @@
         ]
     },
     "capmonster": {
-        "enabled": true,
-        "api_key": "your-anticaptcha-key"
-    },
-    "anticaptcha": {
         "enabled": false,
-        "api_key": "your-anticaptcha-key"
+        "api_key": "your_key"
+    },
+    "2captcha": {
+        "enabled": true,
+        "api_key": "your_key"
     },
     "quest": {
         "enabled": false,
