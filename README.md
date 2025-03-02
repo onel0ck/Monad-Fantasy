@@ -41,6 +41,10 @@
         "enabled": true,            // Включить capmonster для решения капчи
         "api_key": "your-api-key"   // Ваш API ключ Capmonster
     },
+    "2captcha": {
+        "enabled": true,
+        "api_key": "your_key"
+    },
     "daily": {
         "enabled": true             // Включить получение ежедневных наград
     },
