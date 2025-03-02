@@ -12,7 +12,7 @@ from src.utils import (
     read_user_agents,
     error_log,
     info_log,
-    validate_tournament_config  # Добавлен импорт функции
+    validate_tournament_config
 )
 from src.main import FantasyProcessor
 
@@ -34,7 +34,6 @@ def get_start_delay():
     while True:
         try:
             delay = input(f"\n{Fore.YELLOW}Enter delay before start (in seconds): {Fore.RESET}")
-            # Безопасная конвертация в целое число с проверкой
             if not delay.strip():
                 print(f"{Fore.RED}Please enter a number{Fore.RESET}")
                 continue
