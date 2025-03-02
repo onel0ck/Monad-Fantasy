@@ -11,19 +11,6 @@ import math
 import os
 import jwt
 from typing import Dict, Optional, Tuple
-from colorama import Foreimport json
-from time import sleep
-import random
-import requests
-from web3 import Web3
-from eth_account.messages import encode_defunct
-from datetime import datetime, timedelta
-from dateutil import parser
-import pytz
-import math
-import os
-import jwt
-from typing import Dict, Optional, Tuple
 from colorama import Fore
 from .utils import error_log, success_log, info_log, rate_limit_log, debug_log
 from capmonster_python import TurnstileTask
