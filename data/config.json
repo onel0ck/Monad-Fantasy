@@ -17,6 +17,9 @@
     "rpc": {
         "url": "wss://ethereum-rpc.publicnode.com"
     },
+    "monad_rpc": {
+        "url": "https://solitary-shy-tab.monad-testnet.quiknode.pro/7da7ff09b16913dfc6a9d78c9c36554b0c08fe31/"
+    },
     "tactic": {
         "enabled": false,
         "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
@@ -59,7 +62,7 @@
         "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
     "onboarding_quest": {
-        "enabled": true,
+        "enabled": false,
         "ids": [
             "69e67d0a-0a08-4085-889f-58df15bdecb8",
             "767636d2-2477-4d4a-9308-5c2d43a75e02",
@@ -76,6 +79,12 @@
             "db5afa98-90fe-4e9c-9034-3fe1cf72683a",
             "e2f80666-40fe-47a5-804a-35646407312a"
         ]
+    },
+    "starter_cards": {
+        "enabled": true,
+        "contract_address": "0x9077d31a794d81c21b0650974d5f581f4000cd1a",
+        "onboarding_quest_id": "66387328-ff2a-46a9-acb7-846b466934b6",
+        "wait_time_after_claim": 5
     },
     "info_check": true,
     "tournaments": {
