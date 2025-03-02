@@ -217,6 +217,55 @@ class FantasyProcessor:
                             continue
 
                     tasks_completed = True
+
+                    if self.config.get('starter_cards', {}).get('enabled', False):
+                        account_info = None
+                        if self.config['info_check']:
+                            account_info = api.info(token, wallet_address, account_number)
+                            if isinstance(account_info, str) and "429" in account_info:
+                                info_log(f'Rate limit on info check, retrying...')
+                                sleep(2)
+                                continue
+                                
+                        card_count = 0
+                        if isinstance(account_info, dict):
+                            card_count = account_info.get('number_of_cards', 0)
+                        elif os.path.exists(self.config['app']['result_file']):
+                            with open(self.config['app']['result_file'], 'r') as f:
+                                for line in f:
+                                    if wallet_address in line:
+                                        parts = line.strip().split(':')
+                                        for part in parts:
+                                            if part.startswith('number_of_cards='):
+                                                try:
+                                                    card_count = int(part.split('=')[1])
+                                                except ValueError:
+                                                    pass
+                                        break
+                        
+                        if card_count >= 15:
+                            info_log(f"Account {account_number}: Already has {card_count} cards, skipping starter cards claim")
+                        else:
+                            starter_cards_success = api.claim_starter_cards(token, wallet_address, account_number)
+                            if isinstance(starter_cards_success, str) and "429" in starter_cards_success:
+                                info_log(f'Rate limit on claiming starter cards for account {account_number}, retrying...')
+                                sleep(2)
+                                continue
+                            if starter_cards_success:
+                                success_log(f"Account {account_number}: Successfully claimed starter cards")
+                                
+                                if self.config.get('tournaments', {}).get('enabled', False):
+                                    wait_time = self.config.get('starter_cards', {}).get('wait_time_after_claim', 10)
+                                    info_log(f"Waiting {wait_time} seconds for transaction confirmation before tournament registration...")
+                                    sleep(wait_time)
+                                    
+                                    account_info = api.info(token, wallet_address, account_number)
+                                    if isinstance(account_info, str) and "429" in account_info:
+                                        info_log(f'Rate limit on info check after claiming cards, continuing...')
+                                    else:
+                                        success_log(f"Account {account_number}: Updated info after claiming cards")
+                            else:
+                                info_log(f'Claiming starter cards skipped or failed for account {account_number}')
                     
                     if self.config['onboarding_quest']['enabled']:
                         onboarding_ids = self.config['onboarding_quest'].get('ids', [])
