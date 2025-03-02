@@ -169,10 +169,28 @@ class CaptchaTokenPool:
                 token = result.get('token')
                 if token:
                     return token
+            elif self.config.get('2captcha', {}).get('enabled', False):
+                api_key = self.config['2captcha']['api_key']
+                solver = requests.get(
+                    f"https://2captcha.com/in.php?key={api_key}&method=turnstile&sitekey=0x4AAAAAAAM8ceq5KhP1uJBt&pageurl=https://monad.fantasy.top"
+                )
+                if solver.text.startswith('OK|'):
+                    captcha_id = solver.text.split('|')[1]
+                    for i in range(30):
+                        time.sleep(5)
+                        response = requests.get(
+                            f"https://2captcha.com/res.php?key={api_key}&action=get&id={captcha_id}"
+                        )
+                        if response.text.startswith('OK|'):
+                            return response.text.split('|')[1]
+                        if response.text != 'CAPCHA_NOT_READY':
+                            error_log(f"Error from 2captcha: {response.text}")
+                            break
+                    error_log("Timeout waiting for 2captcha solution")
         except Exception as e:
             error_log(f"Error getting captcha token: {e}")
         return None
-
+        
     def get_token(self) -> Optional[str]:
         with self.lock:
             current_time = time.time()
