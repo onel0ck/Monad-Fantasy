@@ -41,7 +41,7 @@
     },
     "capmonster": {
         "enabled": true,
-        "api_key": "your_key"
+        "api_key": "your-anticaptcha-key"
     },
     "anticaptcha": {
         "enabled": false,
