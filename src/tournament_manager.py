@@ -1,4 +1,6 @@
 import uuid
+import time
+import random
 from typing import List, Dict, Optional, Tuple
 from colorama import Fore
 from .utils import error_log, success_log, info_log, debug_log
@@ -86,7 +88,7 @@ class TournamentManager:
                 if not data.get('data'):
                     break
                     
-                for card in data['data']:
+                for card in data.get('data', []):
                     if not card.get('is_in_deck', False):
                         cards.append(card)
                 
@@ -225,61 +227,85 @@ class TournamentManager:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.api.user_agent,
-                'Priority': 'u=1, i',
-                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
-                'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
+                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'same-site'
+                'Sec-Fetch-Site': 'same-site',
+                'Priority': 'u=1, i'
             }
             
-            deck_id = str(uuid.uuid4())
+            max_registration_retries = 3
+            retry_delay = 2
             
-            payload = {
-                "deckId": deck_id,
-                "cardIds": card_ids,
-                "tournamentId": tournament_id
-            }
-            
-            response = self.api.session.post(
-                'https://secret-api.fantasy.top/tournaments/create-deck',
-                headers=headers,
-                json=payload,
-                proxies=self.api.proxies,
-                timeout=15
-            )
-            
-            if response.status_code == 429:
-                info_log(f"Rate limit hit during tournament registration for account {account_number}, retrying...")
-                return False
-            
-            if response.status_code == 401 and auth_token == privy_id_token and token:
-                auth_token = token
-                headers['Authorization'] = f'Bearer {auth_token}'
-                
-                response = self.api.session.post(
-                    'https://secret-api.fantasy.top/tournaments/create-deck',
-                    headers=headers,
-                    json=payload,
-                    proxies=self.api.proxies,
-                    timeout=15
-                )
-            
-            if response.status_code in [200, 201]:
-                success_log(f"Successfully registered account {account_number} in tournament {tournament_id} (Deck #{deck_number})")
-                return True
-                
-            error_log(f"Failed to register for tournament: {response.status_code}")
-            debug_log(f"Registration response: {response.text}")
+            for retry_attempt in range(max_registration_retries):
+                try:
+                    deck_id = str(uuid.uuid4())
+                    
+                    payload = {
+                        "deckId": deck_id,
+                        "cardIds": card_ids,
+                        "tournamentId": tournament_id
+                    }
+                    
+                    debug_log(f"Sending tournament registration payload: {payload}")
+                    
+                    response = self.api.session.post(
+                        'https://secret-api.fantasy.top/tournaments/create-deck',
+                        headers=headers,
+                        json=payload,
+                        proxies=self.api.proxies,
+                        timeout=15
+                    )
+                    
+                    try:
+                        response_data = response.json()
+                        debug_log(f"Tournament registration response: {response_data}")
+                    except Exception:
+                        debug_log(f"Non-JSON response: {response.text}")
+                    
+                    if response.status_code == 429:
+                        info_log(f"Rate limit hit during tournament registration for account {account_number}, retrying ({retry_attempt+1}/{max_registration_retries})...")
+                        time.sleep(retry_delay)
+                        continue
+                    
+                    if response.status_code == 500:
+                        info_log(f"Server error (500) during tournament registration for account {account_number}, retrying ({retry_attempt+1}/{max_registration_retries})...")
+                        time.sleep(retry_delay)
+                        time.sleep(random.uniform(1.0, 3.0))
+                        continue
+                    
+                    if response.status_code == 401 and auth_token == privy_id_token and token:
+                        auth_token = token
+                        headers['Authorization'] = f'Bearer {auth_token}'
+                        continue
+                    
+                    if response.status_code in [200, 201]:
+                        success_log(f"Successfully registered account {account_number} in tournament {tournament_id} (Deck #{deck_number})")
+                        return True
+                        
+                    info_log(f"Unknown response {response.status_code} during tournament registration for account {account_number}, retrying ({retry_attempt+1}/{max_registration_retries})...")
+                    debug_log(f"Registration response: {response.text}")
+                    time.sleep(retry_delay)
+                    
+                except Exception as e:
+                    if retry_attempt < max_registration_retries - 1:
+                        error_log(f"Error during tournament registration attempt {retry_attempt+1}: {str(e)}, retrying...")
+                        time.sleep(retry_delay)
+                    else:
+                        error_log(f"Final error registering for tournament: {str(e)}")
+                        return False
+                    
+            error_log(f"Failed to register for tournament after {max_registration_retries} attempts")
             return False
-            
+                
         except Exception as e:
             error_log(f"Error registering for tournament: {str(e)}")
             return False
     
     def register_in_tournaments(self, token: str, wallet_address: str, account_number: int, 
-                               tournament_ids: Dict[str, str]) -> Dict[str, bool]:
+                                   tournament_ids: Dict[str, str]) -> Dict[str, bool]:
         results = {}
         cards = self.fetch_player_cards(wallet_address, token, account_number)
         
@@ -311,7 +337,7 @@ class TournamentManager:
             
             if len(selected_cards) < 5:
                 if deck_number == 1:
-                    error_log(f"Not enough available cards for {active_tournament_type} tournament for account {account_number}")
+                    info_log(f"Not enough available cards for {active_tournament_type} tournament for account {account_number}")
                     results[active_tournament_type] = False
                 else:
                     info_log(f"No more complete decks available for {active_tournament_type} tournament (registered {deck_number-1} decks)")
@@ -319,7 +345,7 @@ class TournamentManager:
                 
             if total_stars > max_stars:
                 if deck_number == 1:
-                    error_log(f"Selected cards exceed star limit for {active_tournament_type} tournament: {total_stars} > {max_stars}")
+                    info_log(f"Selected cards exceed star limit for {active_tournament_type} tournament: {total_stars} > {max_stars}")
                     results[active_tournament_type] = False
                 else:
                     info_log(f"No more valid decks within star limit for {active_tournament_type} tournament")
