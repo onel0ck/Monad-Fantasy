@@ -41,11 +41,11 @@
     },
     "capmonster": {
         "enabled": false,
-        "api_key": "your_key"
+        "api_key": "key_your"
     },
     "2captcha": {
         "enabled": true,
-        "api_key": "your_key"
+        "api_key": "key_your"
     },
     "quest": {
         "enabled": false,
@@ -62,7 +62,7 @@
         "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
     "onboarding_quest": {
-        "enabled": false,
+        "enabled": true,
         "ids": [
             "69e67d0a-0a08-4085-889f-58df15bdecb8",
             "767636d2-2477-4d4a-9308-5c2d43a75e02",
@@ -86,13 +86,14 @@
         "onboarding_quest_id": "66387328-ff2a-46a9-acb7-846b466934b6",
         "wait_time_after_claim": 5
     },
+    "retry_failed_accounts": true,
     "info_check": true,
     "tournaments": {
         "enabled": true,
         "types": {
             "bronze": {
                 "enabled": false,
-                "id": "a5a63d39-756f-4d6e-9796-0d9fc46b8d1f",
+                "id": "",
                 "max_stars": 18
             },
             "silver": {
