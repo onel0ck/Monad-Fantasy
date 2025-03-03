@@ -729,7 +729,7 @@ class FantasyAPI:
                 
                 result_file = self.config['app']['result_file']
                 existing_data = {}
-                
+
                 if os.path.exists(result_file):
                     with open(result_file, 'r', encoding='utf-8') as f:
                         for line in f:
@@ -737,7 +737,7 @@ class FantasyAPI:
                             if len(parts) > 0:
                                 addr = parts[0]
                                 existing_data[addr] = line.strip()
-                
+
                 result_line = (
                     f"{wallet_address}:"
                     f"stars={player_data.get('stars', 0)}:"
@@ -757,11 +757,6 @@ class FantasyAPI:
                 with open(result_file, 'a+', encoding='utf-8') as f:
                     if wallet_address not in existing_data:
                         f.write(result_line + '\n')
-                    else:
-                        os.makedirs(os.path.dirname("logs/updated_results.txt"), exist_ok=True)
-                        update_file = "logs/updated_results.txt"
-                        with open(update_file, 'a+', encoding='utf-8') as update_f:
-                            update_f.write(result_line + '\n')
 
                 success_log(
                     f"Info collected for account {account_number}: {wallet_address} | "
