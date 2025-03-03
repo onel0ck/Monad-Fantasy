@@ -59,6 +59,23 @@ def start_countdown(seconds):
     
     print(f"\n{Fore.GREEN}Starting now!{Fore.RESET}")
 
+def clear_log_files(config):
+    files_to_clear = [
+        config['app']['failure_file'],
+        config['app']['success_file'],
+        config['app']['log_file'],
+        config['app']['result_file'],
+    ]
+    
+    for file_path in files_to_clear:
+        try:
+            if os.path.exists(file_path):
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write("")
+                info_log(f"Cleared file: {file_path}")
+        except Exception as e:
+            error_log(f"Error clearing file {file_path}: {str(e)}")
+
 def main():
     init()
     ensure_directories()
@@ -70,6 +87,8 @@ def main():
         
         config = load_config()
         config = validate_tournament_config(config)
+        
+        clear_log_files(config)
         
         proxies_dict, all_proxies = read_proxies(config['app']['proxy_file'])
         user_agents_cycle = read_user_agents()
