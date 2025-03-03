@@ -23,9 +23,13 @@ class RetryManager:
         self.lock = threading.Lock()
         self.processed_failures = set()
         self.final_failures = set()
+        self.completed_accounts = set()
 
     def add_failed_account(self, account_data):
         with self.lock:
+            if account_data in self.completed_accounts:
+                return
+                
             if account_data not in self.success_accounts:
                 self.failed_accounts.add(account_data)
                 if account_data not in self.attempt_counter:
@@ -38,6 +42,26 @@ class RetryManager:
                         self.final_failures.add(account_data)
                         self._write_to_fail_file(account_data)
 
+    def add_success_account(self, account_data):
+        with self.lock:
+            self.success_accounts.add(account_data)
+            self.completed_accounts.add(account_data)
+            if account_data in self.failed_accounts:
+                self.failed_accounts.remove(account_data)
+            if account_data in self.final_failures:
+                self.final_failures.remove(account_data)
+            if account_data in self.stored_credentials_failed:
+                self.stored_credentials_failed.remove(account_data)
+            self.processed_failures.add(account_data)
+
+    def should_process(self, account_data):
+        with self.lock:
+            if account_data in self.completed_accounts:
+                return False
+            if account_data in self.attempt_counter and self.attempt_counter[account_data] >= self.max_retries:
+                return False
+            return True
+            
     def _write_to_fail_file(self, account_data):
         try:
             _, private_key, wallet_address = account_data
@@ -57,17 +81,6 @@ class RetryManager:
         except Exception as e:
             error_log(f"Error writing to fail file: {str(e)}")
 
-    def add_success_account(self, account_data):
-        with self.lock:
-            self.success_accounts.add(account_data)
-            if account_data in self.failed_accounts:
-                self.failed_accounts.remove(account_data)
-            if account_data in self.final_failures:
-                self.final_failures.remove(account_data)
-            if account_data in self.stored_credentials_failed:
-                self.stored_credentials_failed.remove(account_data)
-            self.processed_failures.add(account_data)
-
     def mark_stored_credentials_failed(self, account_data):
         with self.lock:
             self.stored_credentials_failed.add(account_data)
@@ -78,7 +91,8 @@ class RetryManager:
     def get_retry_accounts(self):
         with self.lock:
             return [acc for acc in self.failed_accounts 
-                   if self.attempt_counter[acc] < self.max_retries 
+                   if acc not in self.completed_accounts
+                   and self.attempt_counter[acc] < self.max_retries 
                    and acc not in self.final_failures]
 
     def get_current_attempt(self, account_data):
@@ -96,7 +110,8 @@ class RetryManager:
     def get_unprocessed_failures(self):
         with self.lock:
             return [acc for acc in self.failed_accounts 
-                   if acc not in self.processed_failures]
+                   if acc not in self.processed_failures
+                   and acc not in self.completed_accounts]
 
 class FantasyProcessor:
     def __init__(self, config, proxies_dict, all_proxies, user_agents_cycle):
@@ -129,6 +144,11 @@ class FantasyProcessor:
 
     def process_account_with_retry(self, account_number, private_key, wallet_address, total_accounts):
         account_data = (account_number, private_key, wallet_address)
+        
+        if not self.retry_manager.should_process(account_data):
+            info_log(f"Skipping account {account_number}: already processed successfully or max retries reached")
+            return
+            
         proxy_retries = 0
         
         while proxy_retries < self.max_proxy_retries:
@@ -395,6 +415,10 @@ class FantasyProcessor:
         return False
 
     def retry_failed_accounts(self):
+        if not self.config['app'].get('retry_failed_accounts', True):
+            info_log("Retry failed accounts feature is disabled in config. Skipping.")
+            return
+            
         while self.retry_manager.should_continue_retrying():
             retry_accounts = self.retry_manager.get_retry_accounts()
             if retry_accounts:
