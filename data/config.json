@@ -22,7 +22,7 @@
     },
     "tactic": {
         "enabled": false,
-        "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
+        "id": "",
         "max_toggle_attempts": 15,
         "delay_between_attempts": 2,
         "old_account": false,
@@ -40,18 +40,18 @@
         ]
     },
     "capmonster": {
-        "enabled": false,
-        "api_key": "key_your"
+        "enabled": true,
+        "api_key": "YOUR_KEY"
     },
     "2captcha": {
-        "enabled": true,
-        "api_key": "key_your"
+        "enabled": false,
+        "api_key": "YOUR_KEY"
     },
     "quest": {
         "enabled": false,
         "ids": [
-            "ea7c4f8a-0db8-4a9d-a840-5f76cfb1fad5",
-            "ba57e629-9aee-4a2b-a02c-14713725f941"
+            "",
+            ""
         ]
     },
     "daily": {
@@ -59,10 +59,10 @@
     },
     "fragments": {
         "enabled": false,
-        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+        "id": ""
     },
     "onboarding_quest": {
-        "enabled": true,
+        "enabled": false,
         "ids": [
             "69e67d0a-0a08-4085-889f-58df15bdecb8",
             "767636d2-2477-4d4a-9308-5c2d43a75e02",
@@ -86,18 +86,22 @@
         "onboarding_quest_id": "66387328-ff2a-46a9-acb7-846b466934b6",
         "wait_time_after_claim": 5
     },
+    "fragment_roulette": {
+        "enabled": true,
+        "min_fragments": 50
+    },
     "retry_failed_accounts": true,
     "info_check": true,
     "tournaments": {
         "enabled": true,
         "types": {
             "bronze": {
-                "enabled": false,
-                "id": "",
+                "enabled": true,
+                "id": "279b07fe-bc66-4c8c-bcb4-a92ba781e803",
                 "max_stars": 18
             },
             "silver": {
-                "enabled": true,
+                "enabled": false,
                 "id": "fc0b4ca2-6d92-47ea-b0c0-1ca063ccb7b3", 
                 "max_stars": 23
             },
