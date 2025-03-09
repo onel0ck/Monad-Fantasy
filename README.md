@@ -1,113 +1,179 @@
 # Fantasy Manager
-Автоматизированный инструмент для управления аккаунтами Fantasy на Monad.
+Automated tool for managing Fantasy accounts on Monad.
 
 ## Contacts
 * Telegram Channel: [unluck_1l0ck](https://t.me/unluck_1l0ck)
 * Telegram: @one_lock
 * Twitter/X: [@1l0ck](https://x.com/1l0ck)
 
-## Описание
-Данный скрипт автоматизирует процессы авторизации и выполнения ежедневных заданий для множества аккаунтов Fantasy. Основные функции:
-- Авторизация через приватный ключ
-- Получение ежедневных наград (daily claim)
-- Получение стартовых карт (15 шт) для новых аккаунтов
-- Выполнение квеста "onboarding" для новых аккаунтов
-- Автоматическая регистрация в турнирах (Bronze, Silver, Gold, Elite)
+## Description
+This script automates the processes of authorization and performing daily tasks for multiple Fantasy accounts. Main features:
+- Authorization via private key
+- Daily rewards claim
+- "Onboarding" quest completion for new accounts
+- Automatic tournament registration (Bronze, Silver, Gold, Elite)
+- Automatic tournament rewards checking and claiming
+- Using fragments for roulette spins
+- Analysis of account results and statistics
 
-## Настройка
-1. Создайте папки `data` и `logs`, если они не существуют.
-2. Добавьте ваши приватные ключи и адреса в файл `data/keys_and_addresses.txt` в формате:
+## Setup
+1. Create `data` and `logs` folders if they don't exist.
+2. Add your private keys and addresses to the `data/keys_and_addresses.txt` file in the format:
    ```
    privateKey:walletAddress
    ```
-3. Добавьте прокси в файл `data/proxys.txt` (по одному на строку)
-4. Настройте файл `data/config.json` согласно вашим требованиям
+3. Add proxies to the `data/proxys.txt` file (one per line)
+4. Configure the `data/config.json` file according to your requirements
 
-## Конфигурация
-Настройки в `config.json`:
+## Configuration
+The following settings in `config.json` are currently working:
 ```json
 {
     "app": {
-        "threads": 5,              // Количество потоков
+        "threads": 5,              // Number of threads
+        "keys_file": "data/keys_and_addresses.txt",
+        "proxy_file": "data/proxys.txt",
+        "success_file": "logs/success_accounts.txt",
+        "failure_file": "logs/failure_accounts.txt",
+        "result_file": "logs/result.txt",
+        "log_file": "logs/app.log",
+        "min_balance": 0.01
     },
     "rpc": {
-        "url": "wss://ethereum-rpc.publicnode.com"   // RPC для Ethereum
+        "url": "wss://ethereum-rpc.publicnode.com"
     },
     "monad_rpc": {
-        "url": "https://solitary-shy-tab.monad-testnet.quiknode.pro/7da7ff09b16913dfc6a9d78c9c36554b0c08fe31/"   // RPC для Monad
+        "url": "https://solitary-shy-tab.monad-testnet.quiknode.pro/7da7ff09b16913dfc6a9d78c9c36554b0c08fe31/"
     },
-    "info_check": true,             // Собирать информацию об аккаунте result.txt
+    "info_check": true,             // Collect account information in result.txt
     "capmonster": {
-        "enabled": true,            // Включить capmonster для решения капчи
-        "api_key": "your-api-key"   // Ваш API ключ Capmonster
+        "enabled": true,            // Enable capmonster for captcha solving
+        "api_key": "your-api-key"   // Your Capmonster API key
     },
     "2captcha": {
-        "enabled": true,
-        "api_key": "your_key"
+        "enabled": false,
+        "api_key": "key"
     },
     "daily": {
-        "enabled": true             // Включить получение ежедневных наград
-    },
-    "starter_cards": {
-        "enabled": true,            // Включить получение стартовых карт (15 шт)
-        "contract_address": "0x9077d31a794d81c21b0650974d5f581f4000cd1a",
-        "onboarding_quest_id": "66387328-ff2a-46a9-acb7-846b466934b6",
-        "wait_time_after_claim": 10   // Время ожидания после получения карт (в секундах)
+        "enabled": true             // Enable daily rewards claiming
     },
     "onboarding_quest": {
-        "enabled": false,           // Если true, выполнит onboarding квест
-        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+        "enabled": true,            // If true, will complete onboarding quests
+        "ids": [
+            "69e67d0a-0a08-4085-889f-58df15bdecb8",  // onboarding_signup
+            "767636d2-2477-4d4a-9308-5c2d43a75e02",  // onboarding_profile
+            "7beb55de-8067-4680-b3ad-ac397b90a55c",  // onboarding_shop
+            "96e6f5f9-e187-4488-b8ee-61c412f7fa4b",  // onboarding_competition
+            "66387328-ff2a-46a9-acb7-846b466934b6",  // onboarding_pack_opening
+            "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f",  // onboarding_deck
+            "2a6ce72f-6352-487c-aa8b-29ba2d150259",  // onboarding_deposit
+            "3681ad25-0130-4573-9235-1a658b3af60e",  // onboarding_wheel_share
+            "4122dd9a-dc8f-4fab-970e-6de099673ab4",  // onboarding_free_tactic
+            "535272d6-fbca-44c2-abf3-2c7316dc8f4c",  // onboarding_tactic
+            "94484d32-aabf-47d0-a412-c5d0dfefeb44",  // onboarding_wheel_deposit
+            "94807dbb-24fe-4055-986d-efd6212d28d5",  // onboarding_share
+            "db5afa98-90fe-4e9c-9034-3fe1cf72683a",  // onboarding_wheel_free_tactic
+            "e2f80666-40fe-47a5-804a-35646407312a"   // onboarding_gift
+        ]
+    },
+    "starter_cards": {
+        "enabled": true,
+        "wait_time_after_claim": 5
     },
     "tournaments": {
-        "enabled": true,            // Включить автоматическую регистрацию в турнирах
+        "enabled": true,            // Enable automatic tournament registration
         "types": {
             "bronze": {
-                "enabled": true,    // Включить регистрацию в бронзовом турнире
-                "id": "a5a63d39-756f-4d6e-9796-0d9fc46b8d1f", // ID текущего турнира
-                "max_stars": 18     // Максимальное количество звезд для турнира
+                "enabled": true,    // Enable Bronze tournament registration
+                "id": "a5a63d39-756f-4d6e-9796-0d9fc46b8d1f", // Current tournament ID
+                "max_stars": 18     // Maximum number of stars for the tournament
             },
             "silver": {
-                "enabled": false,   // Выключено
-                "id": "",          // Укажите ID серебряного турнира
+                "enabled": false,   // Disabled
+                "id": "",          // Specify Silver tournament ID
                 "max_stars": 23
             },
             "gold": {
                 "enabled": false,
-                "id": "",          // Укажите ID золотого турнира
+                "id": "",          // Specify Gold tournament ID
                 "max_stars": 25
             },
             "elite": {
                 "enabled": false,
-                "id": "",          // Укажите ID элитного турнира
+                "id": "",          // Specify Elite tournament ID
                 "max_stars": 999
             }
         }
-    }
+    },
+    "fragment_roulette": {
+        "enabled": true,           // Enable fragment roulette
+        "min_fragments": 50        // Minimum fragments required for spinning
+    },
+    "retry_failed_accounts": true
 }
 ```
 
-Вот все "onboarding_quest":
+## New Features
+
+### Tournament Rewards Checking and Claiming
+The script now automatically checks for tournament rewards and claims them. This feature is enabled by default with `"info_check": true` and doesn't require additional settings.
+
+
+### Results Analysis
+A new script `analyze_results.py` has been added to the `logs` folder, which allows you to analyze account information from the `result.txt` file. The script provides the following statistics:
+
+- Total number of accounts, cards, fantasy points, fragments
+- Average values of various metrics across accounts
+- Statistics on accounts with rewards and packs
+- List of accounts with tournament rewards and pending packs
+- Top 5 accounts by various metrics
+
+To run the analysis:
+```bash
+cd logs
+python analyze_results.py
 ```
-"onboarding_quest": {
-    "enabled": true,
-    "ids": [
-        "69e67d0a-0a08-4085-889f-58df15bdecb8",  // onboarding_signup - Регистрация
-        "767636d2-2477-4d4a-9308-5c2d43a75e02",  // onboarding_profile - Заполнение профиля
-        "7beb55de-8067-4680-b3ad-ac397b90a55c",  // onboarding_shop - Посещение магазина
-        "96e6f5f9-e187-4488-b8ee-61c412f7fa4b",  // onboarding_competition - Просмотр соревнований
-        "66387328-ff2a-46a9-acb7-846b466934b6",  // onboarding_pack_opening - Открытие пака
-        "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f",  // onboarding_deck - Создание колоды
-        "2a6ce72f-6352-487c-aa8b-29ba2d150259",  // onboarding_deposit - Депозит
-        "3681ad25-0130-4573-9235-1a658b3af60e",  // onboarding_wheel_share - Поделиться колесом
-        "4122dd9a-dc8f-4fab-970e-6de099673ab4",  // onboarding_free_tactic - Бесплатная тактика
-        "535272d6-fbca-44c2-abf3-2c7316dc8f4c",  // onboarding_tactic - Тактика
-        "94484d32-aabf-47d0-a412-c5d0dfefeb44",  // onboarding_wheel_deposit - Депозит для колеса
-        "94807dbb-24fe-4055-986d-efd6212d28d5",  // onboarding_share - Поделиться
-        "db5afa98-90fe-4e9c-9034-3fe1cf72683a",  // onboarding_wheel_free_tactic - Бесплатная тактика через колесо
-        "e2f80666-40fe-47a5-804a-35646407312a"   // onboarding_gift - Подарок
-    ]
-}
+
+## Improvements in Account Information
+Additional information is now recorded in the `result.txt` file:
+
+- `tournament_rewards` - tournament rewards that have been received
+- `pending_packs` - packs that have been received but not claimed
+- `packs` - packs received from spinning the roulette
+- `active_tournaments` - information about active tournaments and decks
+
+Example entry in `result.txt`:
 ```
+0x6Be3866Cb9eca40849189bA709Db5C111239496C:stars=0:gold="0":portfolio_value=1069.7:number_of_cards=17:fantasy_points=3840:fragments=5:onboarding_done=False:whitelist_tickets=2:gliding_score=6507.37:rewards=0:tournament_rewards=Tournament2:FAN(40),FRAGMENT(70),WHITELIST_TICKET(2):pending_packs=PACK(1)
+```
+
+## Tournament Registration
+The tournament registration module allows automatic participation in various Fantasy Top tournaments. The functionality includes:
+
+- Automatic retrieval of available cards on the account
+- Smart selection of optimal combinations of 5 cards for each tournament type
+- Consideration of star limitations: Bronze (18), Silver (23), Gold (25), Elite (no limit)
+- Algorithm for selecting the most valuable cards considering rating and stars
+- Multiple deck registrations for one tournament if the account has enough cards
+
+### Important tournament features:
+
+1. **Selecting only one tournament type**:
+   - You can enable only one tournament type at a time (Bronze, Silver, Gold, or Elite)
+   - If multiple tournaments are enabled in the configuration, the script will automatically choose only the first one
+   - It's recommended to explicitly enable only one desired tournament, setting `"enabled": false` for others
+
+2. **Registering multiple decks**:
+   - The script automatically determines how many complete decks can be created from available cards
+   - The maximum possible number of decks will be created for each tournament type, taking into account star restrictions
+   - Each deck must consist of 5 unique cards
+   - One card cannot be used in multiple decks
+
+3. **Updating tournament IDs**:
+   - Tournament IDs change for each new tournament
+   - Be sure to update the IDs in the configuration before running
+   - Tournament ID can be found in the tournament page URL or through the browser network debugger
+
 ## Installation
 
 1. Clone the repository:
@@ -127,77 +193,22 @@ source venv/bin/activate  # Linux/Mac
 ```bash
 pip install -r requirements.txt
 ```
-## Запуск
+
+## Running
 ```bash
 python run.py
 ```
-При запуске вы можете указать задержку перед началом в секундах.
+When starting, you can specify a delay before starting in seconds.
 
-## Отладка
-В файле `utils.py` можно изменить значение `DEBUG_MODE = True` для получения подробных логов. По умолчанию режим отладки отключен для минимизации вывода.
+## Debugging
+In the `utils.py` file, you can change the value of `DEBUG_MODE = True` to get detailed logs. By default, debug mode is disabled to minimize output.
 
-## Функции
-### Авторизация
-Скрипт автоматически авторизуется через Privy используя SIWE (Sign-In With Ethereum). Для каждого аккаунта сохраняется токен и куки для повторного использования.
+## Logs
+All operations are logged in the terminal and in the `logs/app.log` file:
+- SUCCESS: successful operations (green color)
+- ERROR: errors (red color)
+- INFO: informational messages
+- RATE LIMIT: rate limiting (yellow color)
 
-### Daily Claim
-После успешной авторизации скрипт получает ежедневную награду. Если включено, эта функция будет вызываться для каждого аккаунта автоматически. В логах отображается:
-- Текущая серия (streak)
-- День в серии
-- Тип и размер полученной награды
-
-### Получение стартовых карт
-Для новых аккаунтов скрипт может автоматически получать 15 стартовых карт. Процесс включает:
-- Проверку, есть ли уже карты на аккаунте (если 15 или более, процесс пропускается)
-- Отправку транзакции в блокчейн Monad для минтинга карт
-- Выполнение квеста "onboarding_pack_opening" для завершения процесса
-- Ожидание подтверждения транзакции перед регистрацией в турнире (если включены оба режима)
-
-Для использования этой функции требуется наличие RPC для сети Monad в конфигурации.
-
-### Onboarding Quest
-Если в `config.json` включена опция `onboarding_quest`, скрипт выполнит квест Onboarding для новых аккаунтов. Данный квест выполняется один раз для каждого аккаунта.
-
-### Регистрация в турнирах
-Модуль регистрации в турнирах позволяет автоматически участвовать в различных турнирах Fantasy Top. Функциональность включает:
-
-- Автоматическое получение списка доступных карт на аккаунте
-- Умный выбор оптимальных комбинаций 5 карт для каждого типа турнира
-- Учет ограничений по звездам: Bronze (18), Silver (23), Gold (25), Elite (без ограничений)
-- Алгоритм выбора наиболее ценных карт с учетом рейтинга и звезд
-- Множественная регистрация колод для одного турнира, если у аккаунта достаточно карт
-
-#### Важные особенности работы с турнирами:
-
-1. **Выбор только одного типа турнира**:
-   - Можно включить только один тип турнира одновременно (Bronze, Silver, Gold или Elite)
-   - Если в конфигурации включено несколько турниров, скрипт автоматически выберет только первый из них
-   - Рекомендуется явно включить только один нужный турнир, выставив для остальных `"enabled": false`
-
-2. **Регистрация нескольких колод**:
-   - Скрипт автоматически определит, сколько полноценных колод можно создать из доступных карт
-   - Для каждого типа турнира будет создано максимально возможное количество колод с учетом ограничений по звездам
-   - Каждая колода должна состоять из 5 уникальных карт
-   - Одна карта не может использоваться в нескольких колодах
-
-3. **Обновление ID турниров**:
-   - ID турниров меняются для каждого нового турнира
-   - Перед запуском обязательно обновите ID в конфигурации
-   - ID турнира можно найти в URL на странице турнира или через отладчик сети браузера
-
-Для использования регистрации в турнирах:
-1. Включите опцию `tournaments.enabled` в config.json
-2. Выберите **только один** тип турнира и для него:
-   - Установите `enabled` в `true`
-   - Укажите актуальный ID турнира в поле `id`
-   - Убедитесь, что для остальных типов турниров установлено `"enabled": false`
-
-## Логи
-Все операции логируются в терминале и в файле `logs/app.log`:
-- SUCCESS: успешные операции (зеленый цвет)
-- ERROR: ошибки (красный цвет) 
-- INFO: информационные сообщения
-- RATE LIMIT: ограничения по частоте запросов (желтый цвет)
-
-Успешные аккаунты сохраняются в `logs/success_accounts.txt`.
-Неудачные попытки записываются в `logs/failure_accounts.txt` для последующего повторения.
+Successful accounts are saved in `logs/success_accounts.txt`.
+Failed attempts are recorded in `logs/failure_accounts.txt` for subsequent retries.
