@@ -11,6 +11,21 @@ def print_header(text):
     print(f"{Fore.CYAN}| {Fore.YELLOW}{text} {Fore.CYAN}|")
     print(f"{Fore.CYAN}{border}{Style.RESET_ALL}")
 
+def safe_float(value, default=0.0):
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        value = value.strip('"\'')
+        if value.lower() in ('none', 'null', ''):
+            return default
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
+
 def parse_result_file(file_path):
     accounts = []
     
@@ -35,11 +50,14 @@ def parse_result_file(file_path):
                     key, value = part.split('=', 1)
                     try:
                         if key in ['fantasy_points', 'fragments', 'number_of_cards', 'whitelist_tickets']:
-                            account[key] = int(value)
-                        elif key in ['gliding_score'] or key == 'portfolio_value':
-                            account[key] = float(value)
-                        elif key == 'gold' and value.startswith('"') and value.endswith('"'):
-                            account[key] = float(value.strip('"'))
+                            if value.lower() in ('none', 'null', ''):
+                                account[key] = 0
+                            else:
+                                account[key] = int(value)
+                        elif key in ['gliding_score', 'portfolio_value']:
+                            account[key] = safe_float(value)
+                        elif key == 'gold':
+                            account[key] = safe_float(value)
                         elif key == 'onboarding_done':
                             account[key] = value.lower() == 'true'
                         else:
@@ -61,8 +79,9 @@ def analyze_accounts(accounts):
     total_fantasy_points = sum(account.get('fantasy_points', 0) for account in accounts)
     total_fragments = sum(account.get('fragments', 0) for account in accounts)
     total_whitelist_tickets = sum(account.get('whitelist_tickets', 0) for account in accounts)
-    total_portfolio_value = sum(account.get('portfolio_value', 0) for account in accounts)
-    total_gliding_score = sum(account.get('gliding_score', 0) for account in accounts)
+    
+    total_portfolio_value = sum(safe_float(account.get('portfolio_value')) for account in accounts)
+    total_gliding_score = sum(safe_float(account.get('gliding_score')) for account in accounts)
     
     accounts_with_rewards = sum(1 for account in accounts if account.get('rewards', '0') != '0')
     accounts_with_tournament_rewards = sum(1 for account in accounts if 'tournament_rewards' in account)
@@ -124,9 +143,10 @@ def analyze_accounts(accounts):
         print(f"{Fore.YELLOW}{i}. {Fore.WHITE}{account['address']} {Fore.YELLOW}Points: {Fore.WHITE}{account.get('fantasy_points', 0)}")
     
     print_header("TOP 5 ACCOUNTS BY GLIDING SCORE")
-    sorted_by_score = sorted(accounts, key=lambda x: x.get('gliding_score', 0), reverse=True)
+    sorted_by_score = sorted(accounts, key=lambda x: safe_float(x.get('gliding_score')), reverse=True)
     for i, account in enumerate(sorted_by_score[:5], 1):
-        print(f"{Fore.YELLOW}{i}. {Fore.WHITE}{account['address']} {Fore.YELLOW}Score: {Fore.WHITE}{account.get('gliding_score', 0):.2f}")
+        gliding_score = safe_float(account.get('gliding_score'))
+        print(f"{Fore.YELLOW}{i}. {Fore.WHITE}{account['address']} {Fore.YELLOW}Score: {Fore.WHITE}{gliding_score:.2f}")
 
 def main():
     print(f"{Fore.CYAN}===================================================")
