@@ -88,6 +88,7 @@ def analyze_accounts(accounts):
     accounts_with_pending_packs = sum(1 for account in accounts if 'pending_packs' in account)
     accounts_with_packs = sum(1 for account in accounts if 'packs' in account)
     accounts_with_active_tournaments = sum(1 for account in accounts if 'active_tournaments' in account)
+    accounts_with_whitelist_tickets = sum(1 for account in accounts if account.get('whitelist_tickets', 0) > 0)
     
     print_header("ACCOUNT SUMMARY")
     print(f"{Fore.GREEN}Total accounts: {Fore.WHITE}{total_accounts}")
@@ -112,6 +113,7 @@ def analyze_accounts(accounts):
     print(f"{Fore.GREEN}Accounts with pending packs: {Fore.WHITE}{accounts_with_pending_packs} ({accounts_with_pending_packs / total_accounts * 100:.2f}%)")
     print(f"{Fore.GREEN}Accounts with packs: {Fore.WHITE}{accounts_with_packs} ({accounts_with_packs / total_accounts * 100:.2f}%)")
     print(f"{Fore.GREEN}Accounts with active tournaments: {Fore.WHITE}{accounts_with_active_tournaments} ({accounts_with_active_tournaments / total_accounts * 100:.2f}%)")
+    print(f"{Fore.GREEN}Accounts with whitelist tickets: {Fore.WHITE}{accounts_with_whitelist_tickets} ({accounts_with_whitelist_tickets / total_accounts * 100:.2f}%)")
     
     if accounts_with_rewards > 0:
         print_header("ACCOUNTS WITH REWARDS")
@@ -136,6 +138,14 @@ def analyze_accounts(accounts):
         for account in accounts:
             if 'packs' in account:
                 print(f"{Fore.YELLOW}Address: {Fore.WHITE}{account['address']} {Fore.YELLOW}Packs: {Fore.WHITE}{account['packs']}")
+    
+    if accounts_with_whitelist_tickets > 0:
+        print_header("ACCOUNTS WITH WHITELIST TICKETS")
+        sorted_by_tickets = sorted(accounts, key=lambda x: x.get('whitelist_tickets', 0), reverse=True)
+        for account in sorted_by_tickets:
+            tickets = account.get('whitelist_tickets', 0)
+            if tickets > 0:
+                print(f"{Fore.YELLOW}Address: {Fore.WHITE}{account['address']} {Fore.YELLOW}Tickets: {Fore.WHITE}{tickets}")
     
     print_header("TOP 5 ACCOUNTS BY FANTASY POINTS")
     sorted_by_points = sorted(accounts, key=lambda x: x.get('fantasy_points', 0), reverse=True)
