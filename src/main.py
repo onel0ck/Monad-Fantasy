@@ -387,12 +387,15 @@ class FantasyProcessor:
                                         continue
                                     
                                     if claim_result:
-                                        if isinstance(claim_result, dict) and 'claimed' in claim_result:
-                                            rewards = claim_result.get('claimed', {})
-                                            rewards_str = ", ".join([f"{k}: {v}" for k, v in rewards.items()])
-                                            success_log(f"Account {account_number}: Successfully claimed tournament rewards: {rewards_str}")
+                                        if isinstance(claim_result, dict):
+                                            if 'claimed' in claim_result:
+                                                rewards = claim_result.get('claimed', {})
+                                                rewards_str = ", ".join([f"{k}: {v}" for k, v in rewards.items()])
+                                                success_log(f"Account {account_number}: Successfully claimed tournament rewards: {rewards_str}")
+                                            elif 'status' in claim_result and claim_result['status'] == 'already_claimed':
+                                                success_log(f"Account {account_number}: Tournament rewards processing completed")
                                         else:
-                                            success_log(f"Account {account_number}: Tournament rewards processing completed")
+                                            info_log(f"Unexpected result type from claim_tournament_rewards for account {account_number}")
                                     else:
                                         info_log(f'Failed to claim tournament rewards for account {account_number}')
                                 else:
