@@ -627,6 +627,20 @@ class FantasyAPI:
             
             debug_log(f"Tournament claim response status: {response.status_code} for account {account_number}")
             
+            if response.status_code == 400:
+                try:
+                    response_data = response.json()
+                    error_log(f"Error details: {response_data}")
+                    
+                    success_log(f"Tournament rewards appear to have been already claimed for account {account_number}")
+                    
+                    self._clean_rewards_info(wallet_address)
+                    
+                    return True
+                except Exception as e:
+                    error_log(f"Error processing 400 response: {str(e)}")
+                    return False
+            
             if response.status_code not in [200, 201]:
                 error_log(f"Failed to claim tournament rewards: {response.status_code}")
                 try:
@@ -654,6 +668,39 @@ class FantasyAPI:
         except Exception as e:
             error_log(f'Error claiming tournament rewards: {str(e)}')
             return False
+
+    def _clean_rewards_info(self, wallet_address):
+        try:
+            result_file = self.config['app']['result_file']
+            if not os.path.exists(result_file):
+                return
+                
+            lines = []
+            updated = False
+            
+            with open(result_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if wallet_address in line:
+                        parts = line.strip().split(':')
+                        
+                        filtered_parts = []
+                        for part in parts:
+                            if not part.startswith('tournament_rewards='):
+                                filtered_parts.append(part)
+                        
+                        parts = filtered_parts
+                        line = ':'.join(parts) + '\n'
+                        updated = True
+                    
+                    lines.append(line)
+            
+            if updated:
+                with open(result_file, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+                    debug_log(f"Cleaned tournament rewards info for {wallet_address}")
+        
+        except Exception as e:
+            error_log(f"Error cleaning rewards info: {str(e)}")
 
     def _update_account_stats_after_claim(self, wallet_address, claimed_rewards):
         try:
