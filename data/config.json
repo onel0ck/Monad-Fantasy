@@ -22,7 +22,7 @@
     },
     "tactic": {
         "enabled": false,
-        "id": "",
+        "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
         "max_toggle_attempts": 15,
         "delay_between_attempts": 2,
         "old_account": false,
@@ -50,16 +50,16 @@
     "quest": {
         "enabled": false,
         "ids": [
-            "",
-            ""
+            "ea7c4f8a-0db8-4a9d-a840-5f76cfb1fad5",
+            "ba57e629-9aee-4a2b-a02c-14713725f941"
         ]
     },
     "daily": {
-        "enabled": true
+        "enabled": false
     },
     "fragments": {
         "enabled": false,
-        "id": ""
+        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
     },
     "onboarding_quest": {
         "enabled": false,
@@ -94,25 +94,26 @@
     "info_check": true,
     "tournaments": {
         "enabled": true,
+        "claim_rewards": true,
         "types": {
             "bronze": {
-                "enabled": true,
-                "id": "279b07fe-bc66-4c8c-bcb4-a92ba781e803",
+                "enabled": false,
+                "id": "735aa837-1505-4887-80e1-6a6387336a6b",
                 "max_stars": 18
             },
             "silver": {
                 "enabled": false,
-                "id": "fc0b4ca2-6d92-47ea-b0c0-1ca063ccb7b3", 
+                "id": "6ec6ed2c-0a87-45d1-a904-4b9a58c81388", 
                 "max_stars": 23
             },
             "gold": {
-                "enabled": false,
-                "id": "",
+                "enabled": true,
+                "id": "7a9c9d95-6301-4019-9a23-1289b7c7c05f",
                 "max_stars": 25
             },
             "elite": {
                 "enabled": false,
-                "id": "",
+                "id": "1108865e-ddd8-4ac4-bf5f-6fa8586be323",
                 "max_stars": 999
             }
         }
