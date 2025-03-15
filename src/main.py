@@ -377,6 +377,8 @@ class FantasyProcessor:
                                 tournament_ids = [t.get('id') for t in tournament_data.get('tournaments', [])]
                                 
                                 if tournament_ids:
+                                    sleep(1)
+                                    
                                     claim_result = api.claim_tournament_rewards(token, wallet_address, account_number, tournament_ids)
                                     
                                     if isinstance(claim_result, str) and "429" in claim_result:
@@ -384,10 +386,13 @@ class FantasyProcessor:
                                         sleep(2)
                                         continue
                                     
-                                    if claim_result and 'claimed' in claim_result:
-                                        rewards = claim_result.get('claimed', {})
-                                        rewards_str = ", ".join([f"{k}: {v}" for k, v in rewards.items()])
-                                        success_log(f"Account {account_number}: Successfully claimed tournament rewards: {rewards_str}")
+                                    if claim_result:
+                                        if isinstance(claim_result, dict) and 'claimed' in claim_result:
+                                            rewards = claim_result.get('claimed', {})
+                                            rewards_str = ", ".join([f"{k}: {v}" for k, v in rewards.items()])
+                                            success_log(f"Account {account_number}: Successfully claimed tournament rewards: {rewards_str}")
+                                        else:
+                                            success_log(f"Account {account_number}: Tournament rewards processing completed")
                                     else:
                                         info_log(f'Failed to claim tournament rewards for account {account_number}')
                                 else:
