@@ -630,9 +630,7 @@ class FantasyAPI:
             if response.status_code == 400:
                 try:
                     response_data = response.json()
-                    error_log(f"Error details: {response_data}")
-                    
-                    success_log(f"Tournament rewards appear to have been already claimed for account {account_number}")
+                    info_log(f"Account {account_number}: Tournament rewards already claimed")
                     
                     self._clean_rewards_info(wallet_address)
                     
