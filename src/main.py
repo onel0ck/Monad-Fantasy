@@ -357,6 +357,46 @@ class FantasyProcessor:
                             else:
                                 tasks_completed = False
 
+                    if self.config.get('tournaments', {}).get('enabled', False) and self.config.get('tournaments', {}).get('claim_rewards', False):
+                        tournament_rewards = api.check_tournament_rewards(token, wallet_address, account_number)
+                        if isinstance(tournament_rewards, str) and "429" in tournament_rewards:
+                            info_log(f'Rate limit on checking tournament rewards for account {account_number}, retrying...')
+                            sleep(2)
+                            continue
+                        
+                        if tournament_rewards and 'tournamentRewards' in tournament_rewards and tournament_rewards['tournamentRewards']:
+                            success_log(f"Account {account_number}: Found available tournament rewards")
+                            
+                            tournament_data = api.get_active_tournaments(token, wallet_address, account_number)
+                            if isinstance(tournament_data, str) and "429" in tournament_data:
+                                info_log(f'Rate limit on getting tournament data for account {account_number}, retrying...')
+                                sleep(2)
+                                continue
+                            
+                            if tournament_data and 'tournaments' in tournament_data:
+                                tournament_ids = [t.get('id') for t in tournament_data.get('tournaments', [])]
+                                
+                                if tournament_ids:
+                                    claim_result = api.claim_tournament_rewards(token, wallet_address, account_number, tournament_ids)
+                                    
+                                    if isinstance(claim_result, str) and "429" in claim_result:
+                                        info_log(f'Rate limit on claiming tournament rewards for account {account_number}, retrying...')
+                                        sleep(2)
+                                        continue
+                                    
+                                    if claim_result and 'claimed' in claim_result:
+                                        rewards = claim_result.get('claimed', {})
+                                        rewards_str = ", ".join([f"{k}: {v}" for k, v in rewards.items()])
+                                        success_log(f"Account {account_number}: Successfully claimed tournament rewards: {rewards_str}")
+                                    else:
+                                        info_log(f'Failed to claim tournament rewards for account {account_number}')
+                                else:
+                                    info_log(f'No tournament IDs found for account {account_number}')
+                            else:
+                                info_log(f'Tournament data unavailable for account {account_number}')
+                        else:
+                            info_log(f'No available tournament rewards found for account {account_number}')
+
                     if self.config['info_check']:
                         info_success = api.info(token, wallet_address, account_number)
                         if isinstance(info_success, str) and "429" in info_success:
