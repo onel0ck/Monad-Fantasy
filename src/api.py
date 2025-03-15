@@ -636,7 +636,7 @@ class FantasyAPI:
                     
                     self._clean_rewards_info(wallet_address)
                     
-                    return True
+                    return {"status": "already_claimed", "message": "Tournament rewards were already claimed"}
                 except Exception as e:
                     error_log(f"Error processing 400 response: {str(e)}")
                     return False
