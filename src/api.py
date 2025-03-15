@@ -494,11 +494,43 @@ class FantasyAPI:
                 'Authorization': f'Bearer {auth_token}',
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
-                'User-Agent': self.user_agent
+                'User-Agent': self.user_agent,
+                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"'
             }
 
+            rewards_response = self.session.get(
+                'https://secret-api.fantasy.top/player/player-rewards',
+                headers=headers,
+                proxies=self.proxies,
+                timeout=10
+            )
+            
+            if rewards_response.status_code == 401 and auth_token == privy_id_token and token:
+                auth_token = token
+                headers['Authorization'] = f'Bearer {auth_token}'
+                rewards_response = self.session.get(
+                    'https://secret-api.fantasy.top/player/player-rewards',
+                    headers=headers,
+                    proxies=self.proxies,
+                    timeout=10
+                )
+            
+            tournament_number = 3
+            
+            if rewards_response.status_code == 200:
+                rewards_data = rewards_response.json()
+                tournament_rewards = rewards_data.get('tournamentRewards', [])
+                if tournament_rewards:
+                    tournament_numbers = [reward.get('tournament_number', 0) for reward in tournament_rewards]
+                    if tournament_numbers:
+                        tournament_number = max(tournament_numbers)
+                        debug_log(f"Tournament number determined: {tournament_number} for account {account_number}")
+            
+            debug_log(f"Getting tournament summary for account {account_number}, tournament number: {tournament_number}")
             response = self.session.get(
-                f'https://secret-api.fantasy.top/tournaments/summary/2/player?playerId={wallet_address}',
+                f'https://secret-api.fantasy.top/tournaments/summary/{tournament_number}/player?playerId={wallet_address}',
                 headers=headers,
                 proxies=self.proxies,
                 timeout=10
@@ -508,7 +540,7 @@ class FantasyAPI:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
                 response = self.session.get(
-                    f'https://secret-api.fantasy.top/tournaments/summary/2/player?playerId={wallet_address}',
+                    f'https://secret-api.fantasy.top/tournaments/summary/{tournament_number}/player?playerId={wallet_address}',
                     headers=headers,
                     proxies=self.proxies,
                     timeout=10
@@ -519,8 +551,22 @@ class FantasyAPI:
                 return None
             
             data = response.json()
-            return data
             
+            debug_log(f"Tournament summary response: {response.status_code}")
+            
+            if 'already_claimed' in data:
+                debug_log(f"Already claimed status: {data['already_claimed']} for account {account_number}")
+            
+            if 'tournaments' in data:
+                tournament_info = []
+                for t in data['tournaments']:
+                    tournament_info.append(f"{t.get('name', 'Unknown')}(#{t.get('tournament_number', 'N/A')})")
+                
+                if 'already_claimed' in data:
+                    already_claimed = "Yes" if data.get('already_claimed', True) else "No"
+                    info_log(f"Account {account_number}: Tournaments: {', '.join(tournament_info)}. Already claimed: {already_claimed}")
+            
+            return data
         except Exception as e:
             error_log(f'Error getting active tournaments: {str(e)}')
             return None
@@ -541,45 +587,139 @@ class FantasyAPI:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'Content-Length': '0',
-                'User-Agent': self.user_agent
+                'User-Agent': self.user_agent,
+                'Priority': 'u=1, i',
+                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-site'
             }
 
+            if isinstance(tournament_ids, list):
+                tournament_ids_str = ",".join(tournament_ids)
+            else:
+                tournament_ids_str = tournament_ids
+
+            debug_log(f"Claiming tournament rewards for account {account_number}: {tournament_ids_str}")
+            
             response = self.session.post(
-                f'https://secret-api.fantasy.top/rewards/tournament-rewards-claim/{",".join(tournament_ids)}',
+                f'https://secret-api.fantasy.top/rewards/tournament-rewards-claim/{tournament_ids_str}',
                 headers=headers,
                 data="",
                 proxies=self.proxies,
-                timeout=10
+                timeout=15
             )
             
             if response.status_code == 401 and auth_token == privy_id_token and token:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
+                debug_log(f"Retrying claim with different token for account {account_number}")
+                
                 response = self.session.post(
-                    f'https://secret-api.fantasy.top/rewards/tournament-rewards-claim/{",".join(tournament_ids)}',
+                    f'https://secret-api.fantasy.top/rewards/tournament-rewards-claim/{tournament_ids_str}',
                     headers=headers,
                     data="",
                     proxies=self.proxies,
-                    timeout=10
+                    timeout=15
                 )
+            
+            debug_log(f"Tournament claim response status: {response.status_code} for account {account_number}")
             
             if response.status_code not in [200, 201]:
                 error_log(f"Failed to claim tournament rewards: {response.status_code}")
+                try:
+                    response_data = response.json()
+                    error_log(f"Error details: {response_data}")
+                except:
+                    error_log(f"Response text: {response.text[:200]}")
                 return False
             
             data = response.json()
+            debug_log(f"Tournament claim response data: {data}")
             
             if "claimed" in data:
                 rewards = data.get("claimed", {})
                 rewards_str = ", ".join([f"{k}: {v}" for k, v in rewards.items()])
                 success_log(f"Successfully claimed tournament rewards for account {account_number}: {rewards_str}")
+                
+                self._update_account_stats_after_claim(wallet_address, rewards)
+                
                 return data
-            
-            return False
-            
+            else:
+                info_log(f"Unexpected response format from tournament reward claim: {data}")
+                return False
+                
         except Exception as e:
             error_log(f'Error claiming tournament rewards: {str(e)}')
             return False
+
+    def _update_account_stats_after_claim(self, wallet_address, claimed_rewards):
+        try:
+            result_file = self.config['app']['result_file']
+            if not os.path.exists(result_file):
+                return
+                
+            lines = []
+            updated = False
+            
+            with open(result_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if wallet_address in line:
+                        parts = line.strip().split(':')
+                        
+                        if 'FAN' in claimed_rewards:
+                            fan_points = claimed_rewards['FAN']
+                            for i, part in enumerate(parts):
+                                if part.startswith('fantasy_points='):
+                                    try:
+                                        current_points = int(part.split('=')[1])
+                                        parts[i] = f"fantasy_points={current_points + fan_points}"
+                                        updated = True
+                                    except (ValueError, IndexError):
+                                        pass
+                        
+                        if 'FRAGMENT' in claimed_rewards:
+                            fragments = claimed_rewards['FRAGMENT']
+                            for i, part in enumerate(parts):
+                                if part.startswith('fragments='):
+                                    try:
+                                        current_fragments = int(part.split('=')[1])
+                                        parts[i] = f"fragments={current_fragments + fragments}"
+                                        updated = True
+                                    except (ValueError, IndexError):
+                                        pass
+                        
+                        if 'WHITELIST_TICKET' in claimed_rewards:
+                            whitelist_tickets = claimed_rewards['WHITELIST_TICKET']
+                            for i, part in enumerate(parts):
+                                if part.startswith('whitelist_tickets='):
+                                    try:
+                                        current_tickets = int(part.split('=')[1])
+                                        parts[i] = f"whitelist_tickets={current_tickets + whitelist_tickets}"
+                                        updated = True
+                                    except (ValueError, IndexError):
+                                        pass
+                        
+                        filtered_parts = []
+                        for part in parts:
+                            if not part.startswith('tournament_rewards='):
+                                filtered_parts.append(part)
+                        
+                        parts = filtered_parts
+                        
+                        line = ':'.join(parts) + '\n'
+                    
+                    lines.append(line)
+            
+            if updated:
+                with open(result_file, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+                    debug_log(f"Updated account stats after tournament reward claim for {wallet_address}")
+        
+        except Exception as e:
+            error_log(f"Error updating account stats after tournament reward claim: {str(e)}")
 
     def fragment_roulette(self, token, wallet_address, account_number):
         try:
