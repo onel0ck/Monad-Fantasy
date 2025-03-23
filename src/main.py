@@ -328,7 +328,13 @@ class FantasyProcessor:
                             tasks_completed = False
                     
                     if self.config.get('fragment_roulette', {}).get('enabled', False):
-                        fragment_roulette_result = api.fragment_roulette(token, wallet_address, account_number)
+                        claim_packs = self.config.get('other_rewards', {}).get('claim_packs', False)
+                        fragment_roulette_result = api.fragment_roulette(
+                            token, 
+                            wallet_address, 
+                            account_number, 
+                            private_key if claim_packs else None
+                        )
                         if isinstance(fragment_roulette_result, str) and "429" in fragment_roulette_result:
                             info_log(f'Rate limit on fragment roulette for account {account_number}, retrying...')
                             sleep(2)
@@ -405,7 +411,18 @@ class FantasyProcessor:
                         else:
                             info_log(f'No available tournament rewards found for account {account_number}')
 
-                    # Add this new section for claiming other rewards
+                    if self.config.get('other_rewards', {}).get('enabled', False) and self.config.get('other_rewards', {}).get('claim_packs', False):
+                        pack_processing_result = api.process_fragment_packs(token, wallet_address, account_number, private_key)
+                        if isinstance(pack_processing_result, str) and "429" in pack_processing_result:
+                            info_log(f'Rate limit on pack processing for account {account_number}, retrying...')
+                            sleep(2)
+                            continue
+                        
+                        if pack_processing_result:
+                            success_log(f"Account {account_number}: Successfully processed fragment packs")
+                        else:
+                            info_log(f"Account {account_number}: No fragment packs to process or processing failed")
+
                     if self.config.get('other_rewards', {}).get('enabled', False):
                         other_rewards_result = api.check_other_rewards(token, wallet_address, account_number)
                         if isinstance(other_rewards_result, str) and "429" in other_rewards_result:
