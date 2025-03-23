@@ -87,13 +87,17 @@
         "wait_time_after_claim": 5
     },
     "fragment_roulette": {
-        "enabled": true,
+        "enabled": false,
         "min_fragments": 50
+    },
+    "other_rewards": {
+        "enabled": true,
+        "claim_packs": false
     },
     "retry_failed_accounts": true,
     "info_check": true,
     "tournaments": {
-        "enabled": true,
+        "enabled": false,
         "claim_rewards": true,
         "types": {
             "bronze": {
@@ -107,7 +111,7 @@
                 "max_stars": 23
             },
             "gold": {
-                "enabled": true,
+                "enabled": false,
                 "id": "7a9c9d95-6301-4019-9a23-1289b7c7c05f",
                 "max_stars": 25
             },
