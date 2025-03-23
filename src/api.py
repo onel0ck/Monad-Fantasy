@@ -823,7 +823,291 @@ class FantasyAPI:
             error_log(f"Error claiming other reward: {str(e)}")
             return False
 
-    def check_other_rewards(self, token, wallet_address, account_number):
+    def _check_and_give_approval(self, monad_web3, wallet_address, private_key, contract_address):
+        try:
+            approval_abi = [
+                {
+                    "constant": True,
+                    "inputs": [
+                        {"name": "owner", "type": "address"},
+                        {"name": "operator", "type": "address"}
+                    ],
+                    "name": "isApprovedForAll",
+                    "outputs": [{"name": "", "type": "bool"}],
+                    "payable": False,
+                    "stateMutability": "view",
+                    "type": "function"
+                },
+                {
+                    "constant": False,
+                    "inputs": [
+                        {"name": "operator", "type": "address"},
+                        {"name": "approved", "type": "bool"}
+                    ],
+                    "name": "setApprovalForAll",
+                    "outputs": [],
+                    "payable": False,
+                    "stateMutability": "nonpayable",
+                    "type": "function"
+                }
+            ]
+
+            erc721_contract_address = monad_web3.to_checksum_address("0x04edb399cc24a95672bf9b880ee550de0b2d0b1e")
+            erc721_contract = monad_web3.eth.contract(address=erc721_contract_address, abi=approval_abi)
+            
+            wallet_address_checksum = monad_web3.to_checksum_address(wallet_address)
+            contract_address_checksum = monad_web3.to_checksum_address(contract_address)
+            
+            try:
+                is_approved = erc721_contract.functions.isApprovedForAll(
+                    wallet_address_checksum, 
+                    contract_address_checksum
+                ).call()
+                
+                if is_approved:
+                    debug_log(f"Contract already has approval for {wallet_address}")
+                    return True
+                    
+            except Exception as e:
+                debug_log(f"Error checking approval status: {str(e)}")
+                pass
+            
+            try:
+                nonce = monad_web3.eth.get_transaction_count(wallet_address_checksum, 'pending')
+                
+                gas_price = monad_web3.eth.gas_price
+                max_priority_fee = monad_web3.to_wei(1.5, 'gwei')
+                max_fee_per_gas = gas_price * 2
+                
+                set_approval_txn = erc721_contract.functions.setApprovalForAll(
+                    contract_address_checksum, 
+                    True
+                ).build_transaction({
+                    'nonce': nonce,
+                    'maxFeePerGas': max_fee_per_gas,
+                    'maxPriorityFeePerGas': max_priority_fee,
+                    'gas': 100000,
+                    'type': 2,
+                    'chainId': 10143
+                })
+                
+                account = monad_web3.eth.account.from_key(private_key)
+                signed_txn = account.sign_transaction(set_approval_txn)
+                tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                tx_hash_hex = tx_hash.hex()
+                debug_log(f"Approval transaction sent: {tx_hash_hex}")
+                
+                receipt = None
+                retry_count = 10
+                while retry_count > 0 and receipt is None:
+                    try:
+                        receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
+                        if receipt:
+                            if receipt['status'] == 1:
+                                debug_log(f"Approval transaction confirmed: {tx_hash_hex}")
+                                return True
+                            else:
+                                error_log(f"Approval transaction failed: {tx_hash_hex}")
+                                return False
+                    except Exception:
+                        sleep(2)
+                        retry_count -= 1
+                
+                if not receipt:
+                    debug_log(f"Approval transaction pending: {tx_hash_hex}")
+                    return True
+                    
+            except Exception as e:
+                error_log(f"Error giving approval: {str(e)}")
+            
+            return True
+            
+        except Exception as e:
+            error_log(f"Error checking/giving approval: {str(e)}")
+            return True
+
+    def claim_fragment_pack(self, token, wallet_address, account_number, private_key, pack_id, mint_config_id):
+        try:
+            proof = self._get_merkle_proof(token, mint_config_id)
+            if not proof:
+                error_log(f"Failed to get merkle proof for account {account_number}, mint_config_id: {mint_config_id}")
+                return False
+                
+            monad_web3 = Web3(Web3.HTTPProvider(self.config['monad_rpc']['url']))
+            contract_address = monad_web3.to_checksum_address("0x9077d31a794d81c21b0650974d5f581f4000cd1a")
+            
+            self._check_and_give_approval(monad_web3, wallet_address, private_key, contract_address)
+            
+            try:
+                config_parts = mint_config_id.split('_')
+                if len(config_parts) > 0:
+                    config_id_number = int(config_parts[0])
+                    pack_id_hex = hex(config_id_number)[2:].zfill(64)
+                else:
+                    error_log(f"Invalid mint_config_id format: {mint_config_id}")
+                    return False
+            except ValueError:
+                error_log(f"Invalid mint_config_id numerical part: {mint_config_id}")
+                return False
+
+            method_id = "0x1ff7712f"
+            
+            data = method_id
+            data += pack_id_hex
+            
+            data += "0000000000000000000000000000000000000000000000000000000000000060"
+            
+            array_length = hex(len(proof))[2:].zfill(64)
+            data += array_length
+            
+            for element in proof:
+                if element.startswith('0x'):
+                    element = element[2:]
+                data += element.zfill(64)
+            
+            wallet_address_checksum = monad_web3.to_checksum_address(wallet_address)
+            nonce = monad_web3.eth.get_transaction_count(wallet_address_checksum, 'pending')
+            
+            gas_price = monad_web3.eth.gas_price
+            max_priority_fee = monad_web3.to_wei(1.5, 'gwei')
+            max_fee_per_gas = gas_price * 2
+            
+            transaction = {
+                'nonce': nonce,
+                'to': contract_address,
+                'value': 0,
+                'gas': 200000,
+                'maxFeePerGas': max_fee_per_gas,
+                'maxPriorityFeePerGas': max_priority_fee,
+                'data': data,
+                'type': 2,
+                'chainId': 10143
+            }
+            
+            try:
+                account = monad_web3.eth.account.from_key(private_key)
+                signed_txn = account.sign_transaction(transaction)
+                tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                tx_hash_hex = tx_hash.hex()
+                debug_log(f"Transaction sent for account {account_number}: {tx_hash_hex}")
+                
+                receipt = None
+                retry_count = 10
+                while retry_count > 0 and receipt is None:
+                    try:
+                        receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
+                        if receipt:
+                            if receipt['status'] == 1:
+                                success_log(f"Pack claim transaction confirmed for account {account_number}: {tx_hash_hex}")
+                                return True
+                            else:
+                                error_log(f"Pack claim transaction failed for account {account_number}: {tx_hash_hex}")
+                                return False
+                    except Exception:
+                        sleep(2)
+                        retry_count -= 1
+                
+                if not receipt:
+                    info_log(f"Transaction pending for account {account_number}: {tx_hash_hex}. Will check status later.")
+                    return True
+                    
+            except Exception as e:
+                error_log(f"Error sending transaction for account {account_number}: {str(e)}")
+                return False
+                
+        except Exception as e:
+            error_log(f"Error claiming fragment pack for account {account_number}: {str(e)}")
+            return False
+
+    def _get_merkle_proof(self, token, mint_config_id):
+        try:
+            privy_id_token = None
+            for cookie in self.session.cookies:
+                if cookie.name == 'privy-id-token':
+                    privy_id_token = cookie.value
+                    break
+            
+            auth_token = privy_id_token if privy_id_token else token
+            
+            headers = {
+                'Accept': 'application/json, text/plain, */*',
+                'Authorization': f'Bearer {auth_token}',
+                'Origin': 'https://monad.fantasy.top',
+                'Referer': 'https://monad.fantasy.top/',
+                'User-Agent': self.user_agent,
+                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"'
+            }
+
+            response = self.session.get(
+                f'https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}',
+                headers=headers,
+                proxies=self.proxies,
+                timeout=10
+            )
+            
+            if response.status_code == 401 and auth_token == privy_id_token and token:
+                auth_token = token
+                headers['Authorization'] = f'Bearer {auth_token}'
+                response = self.session.get(
+                    f'https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}',
+                    headers=headers,
+                    proxies=self.proxies,
+                    timeout=10
+                )
+            
+            if response.status_code != 200:
+                error_log(f"Failed to get merkle proof: {response.status_code}")
+                return None
+            
+            data = response.json()
+            return data.get('proof', [])
+                
+        except Exception as e:
+            error_log(f"Error getting merkle proof: {str(e)}")
+            return None
+
+    def process_fragment_packs(self, token, wallet_address, account_number, private_key):
+        try:
+            packs_processed = False
+            
+            rewards_data = self.check_other_rewards(token, wallet_address, account_number, claim=False)
+            
+            if rewards_data and isinstance(rewards_data, dict) and 'otherRewards' in rewards_data:
+                fragment_packs = [reward for reward in rewards_data['otherRewards'] 
+                                if reward.get('type') == 'FRAGMENT_PACK' and reward.get('is_activated', False)]
+                
+                if not fragment_packs:
+                    debug_log(f"No fragment packs found for account {account_number}")
+                    return False
+                    
+                success_log(f"Found {len(fragment_packs)} fragment packs for account {account_number}")
+                
+                for pack in fragment_packs:
+                    pack_id = pack.get('id')
+                    mint_config_id = pack.get('mint_config_id')
+                    
+                    if pack_id and mint_config_id:
+                        info_log(f"Account {account_number}: Found fragment pack {pack_id} with config {mint_config_id}")
+                        
+                        claim_result = self.claim_fragment_pack(
+                            token, wallet_address, account_number, private_key, pack_id, mint_config_id
+                        )
+                        
+                        if claim_result:
+                            success_log(f"Account {account_number}: Successfully claimed fragment pack {pack_id}")
+                            packs_processed = True
+                        else:
+                            info_log(f"Account {account_number}: Failed to claim fragment pack {pack_id}")
+            
+            return packs_processed
+            
+        except Exception as e:
+            error_log(f"Error processing fragment packs for account {account_number}: {str(e)}")
+            return False
+
+    def check_other_rewards(self, token, wallet_address, account_number, claim=True):
         try:
             privy_id_token = None
             for cookie in self.session.cookies:
@@ -866,6 +1150,10 @@ class FantasyAPI:
                 return False
             
             data = response.json()
+            
+            if not claim:
+                return data
+                
             other_rewards = data.get('otherRewards', [])
             
             if not other_rewards:
@@ -880,6 +1168,10 @@ class FantasyAPI:
                 reward_type = reward.get('type', 'UNKNOWN')
                 reward_amount = reward.get('amount', '0')
                 
+                if reward_type == 'FRAGMENT_PACK':
+                    debug_log(f"Skipping FRAGMENT_PACK reward (handled separately) for account {account_number}")
+                    continue
+                    
                 if not reward_id:
                     continue
                     
@@ -890,8 +1182,6 @@ class FantasyAPI:
                     claimed_rewards += 1
                     self._update_account_stats_after_reward_claim(wallet_address, reward_type, reward_amount)
                 
-                # Add a small delay between claims to avoid rate limiting
-                import time
                 time.sleep(1)
             
             if claimed_rewards > 0:
@@ -901,6 +1191,25 @@ class FantasyAPI:
                 
         except Exception as e:
             error_log(f"Error checking other rewards: {str(e)}")
+            return False
+
+    def handle_fragment_roulette_result(self, token, wallet_address, account_number, private_key, roulette_result):
+        try:
+            if not roulette_result or not isinstance(roulette_result, dict) or not roulette_result.get('success', False):
+                return False
+                
+            selected_prize = roulette_result.get('selectedPrize', {})
+            prize_type = selected_prize.get('type', '')
+            
+            if prize_type != 'PACK':
+                return False
+                
+            sleep(2)
+                
+            return self.process_fragment_packs(token, wallet_address, account_number, private_key)
+            
+        except Exception as e:
+            error_log(f"Error handling fragment roulette result for account {account_number}: {str(e)}")
             return False
 
     def _update_account_stats_after_reward_claim(self, wallet_address, reward_type, reward_amount):
@@ -962,7 +1271,7 @@ class FantasyAPI:
         except Exception as e:
             error_log(f"Error updating account stats after reward claim: {str(e)}")
 
-    def fragment_roulette(self, token, wallet_address, account_number):
+    def fragment_roulette(self, token, wallet_address, account_number, private_key=None):
         try:
             privy_id_token = None
             for cookie in self.session.cookies:
@@ -1065,6 +1374,10 @@ class FantasyAPI:
                 
                 if prize_type == "PACK":
                     self._update_pack_info(wallet_address, prize_type, prize_text)
+                    
+                    if private_key:
+                        time.sleep(2)
+                        self.handle_fragment_roulette_result(token, wallet_address, account_number, private_key, data)
                 
                 return data
             
