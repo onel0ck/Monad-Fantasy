@@ -405,6 +405,17 @@ class FantasyProcessor:
                         else:
                             info_log(f'No available tournament rewards found for account {account_number}')
 
+                    # Add this new section for claiming other rewards
+                    if self.config.get('other_rewards', {}).get('enabled', False):
+                        other_rewards_result = api.check_other_rewards(token, wallet_address, account_number)
+                        if isinstance(other_rewards_result, str) and "429" in other_rewards_result:
+                            info_log(f'Rate limit on checking other rewards for account {account_number}, retrying...')
+                            sleep(2)
+                            continue
+                        
+                        if other_rewards_result:
+                            success_log(f"Account {account_number}: Successfully processed other rewards")
+
                     if self.config['info_check']:
                         info_success = api.info(token, wallet_address, account_number)
                         if isinstance(info_success, str) and "429" in info_success:
