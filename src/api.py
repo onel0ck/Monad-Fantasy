@@ -766,6 +766,202 @@ class FantasyAPI:
         except Exception as e:
             error_log(f"Error updating account stats after tournament reward claim: {str(e)}")
 
+    def claim_other_rewards(self, token, wallet_address, account_number, reward_id):
+        try:
+            privy_id_token = None
+            for cookie in self.session.cookies:
+                if cookie.name == 'privy-id-token':
+                    privy_id_token = cookie.value
+                    break
+            
+            auth_token = privy_id_token if privy_id_token else token
+            
+            headers = {
+                'Accept': 'application/json, text/plain, */*',
+                'Authorization': f'Bearer {auth_token}',
+                'Origin': 'https://monad.fantasy.top',
+                'Referer': 'https://monad.fantasy.top/',
+                'Content-Length': '0',
+                'User-Agent': self.user_agent,
+                'Priority': 'u=1, i',
+                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'Sec-Ch-Ua-Mobile': '?0',
+                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Fetch-Dest': 'empty',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Site': 'same-site'
+            }
+
+            response = self.session.post(
+                f'https://secret-api.fantasy.top/rewards/rewards-claim/{reward_id}',
+                headers=headers,
+                data="",
+                proxies=self.proxies,
+                timeout=15
+            )
+            
+            if response.status_code == 401 and auth_token == privy_id_token and token:
+                auth_token = token
+                headers['Authorization'] = f'Bearer {auth_token}'
+                
+                response = self.session.post(
+                    f'https://secret-api.fantasy.top/rewards/rewards-claim/{reward_id}',
+                    headers=headers,
+                    data="",
+                    proxies=self.proxies,
+                    timeout=15
+                )
+            
+            if response.status_code in [200, 201]:
+                success_log(f"Successfully claimed other reward {reward_id} for account {account_number}")
+                return True
+            
+            error_log(f"Failed to claim other reward {reward_id}: {response.status_code}")
+            return False
+                
+        except Exception as e:
+            error_log(f"Error claiming other reward: {str(e)}")
+            return False
+
+    def check_other_rewards(self, token, wallet_address, account_number):
+        try:
+            privy_id_token = None
+            for cookie in self.session.cookies:
+                if cookie.name == 'privy-id-token':
+                    privy_id_token = cookie.value
+                    break
+            
+            auth_token = privy_id_token if privy_id_token else token
+            
+            headers = {
+                'Accept': 'application/json, text/plain, */*',
+                'Authorization': f'Bearer {auth_token}',
+                'Origin': 'https://monad.fantasy.top',
+                'Referer': 'https://monad.fantasy.top/',
+                'User-Agent': self.user_agent,
+                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"'
+            }
+
+            response = self.session.get(
+                'https://secret-api.fantasy.top/player/player-rewards',
+                headers=headers,
+                proxies=self.proxies,
+                timeout=10
+            )
+            
+            if response.status_code == 401 and auth_token == privy_id_token and token:
+                auth_token = token
+                headers['Authorization'] = f'Bearer {auth_token}'
+                response = self.session.get(
+                    'https://secret-api.fantasy.top/player/player-rewards',
+                    headers=headers,
+                    proxies=self.proxies,
+                    timeout=10
+                )
+            
+            if response.status_code != 200:
+                error_log(f"Failed to check other rewards: {response.status_code}")
+                return False
+            
+            data = response.json()
+            other_rewards = data.get('otherRewards', [])
+            
+            if not other_rewards:
+                debug_log(f"No other rewards found for account {account_number}")
+                return False
+            
+            success_log(f"Found {len(other_rewards)} other rewards for account {account_number}")
+            
+            claimed_rewards = 0
+            for reward in other_rewards:
+                reward_id = reward.get('id')
+                reward_type = reward.get('type', 'UNKNOWN')
+                reward_amount = reward.get('amount', '0')
+                
+                if not reward_id:
+                    continue
+                    
+                info_log(f"Account {account_number}: Found reward {reward_type}({reward_amount}), ID: {reward_id}")
+                
+                claim_result = self.claim_other_rewards(token, wallet_address, account_number, reward_id)
+                if claim_result:
+                    claimed_rewards += 1
+                    self._update_account_stats_after_reward_claim(wallet_address, reward_type, reward_amount)
+                
+                # Add a small delay between claims to avoid rate limiting
+                import time
+                time.sleep(1)
+            
+            if claimed_rewards > 0:
+                success_log(f"Successfully claimed {claimed_rewards} other rewards for account {account_number}")
+                return True
+            return False
+                
+        except Exception as e:
+            error_log(f"Error checking other rewards: {str(e)}")
+            return False
+
+    def _update_account_stats_after_reward_claim(self, wallet_address, reward_type, reward_amount):
+        try:
+            result_file = self.config['app']['result_file']
+            if not os.path.exists(result_file):
+                return
+                
+            lines = []
+            updated = False
+            
+            with open(result_file, 'r', encoding='utf-8') as f:
+                for line in f:
+                    if wallet_address in line:
+                        parts = line.strip().split(':')
+                        
+                        if reward_type == 'FAN':
+                            amount = int(reward_amount)
+                            for i, part in enumerate(parts):
+                                if part.startswith('fantasy_points='):
+                                    try:
+                                        current_points = int(part.split('=')[1])
+                                        parts[i] = f"fantasy_points={current_points + amount}"
+                                        updated = True
+                                    except (ValueError, IndexError):
+                                        pass
+                        
+                        elif reward_type == 'FRAGMENT':
+                            amount = int(reward_amount)
+                            for i, part in enumerate(parts):
+                                if part.startswith('fragments='):
+                                    try:
+                                        current_fragments = int(part.split('=')[1])
+                                        parts[i] = f"fragments={current_fragments + amount}"
+                                        updated = True
+                                    except (ValueError, IndexError):
+                                        pass
+                        
+                        elif reward_type == 'WHITELIST_TICKET':
+                            amount = int(reward_amount)
+                            for i, part in enumerate(parts):
+                                if part.startswith('whitelist_tickets='):
+                                    try:
+                                        current_tickets = int(part.split('=')[1])
+                                        parts[i] = f"whitelist_tickets={current_tickets + amount}"
+                                        updated = True
+                                    except (ValueError, IndexError):
+                                        pass
+                        
+                        line = ':'.join(parts) + '\n'
+                    
+                    lines.append(line)
+            
+            if updated:
+                with open(result_file, 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+                    debug_log(f"Updated account stats after reward claim for {wallet_address}: {reward_type}({reward_amount})")
+        
+        except Exception as e:
+            error_log(f"Error updating account stats after reward claim: {str(e)}")
+
     def fragment_roulette(self, token, wallet_address, account_number):
         try:
             privy_id_token = None
