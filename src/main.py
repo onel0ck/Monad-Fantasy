@@ -286,7 +286,38 @@ class FantasyProcessor:
                                         success_log(f"Account {account_number}: Updated info after claiming cards")
                             else:
                                 info_log(f'Claiming starter cards skipped or failed for account {account_number}')
-                    
+
+                    if self.config.get('fragment_packs', {}).get('enabled', False) and self.config.get('fragment_packs', {}).get('buy_packs', False):
+                        try:
+                            pack_type = self.config.get('fragment_packs', {}).get('pack_type', 'violet')
+                            pack_id = self.config.get('fragment_packs', {}).get('pack_types', {}).get(pack_type, {}).get('id')
+                            
+                            if not pack_id:
+                                info_log(f"Invalid pack type in configuration: {pack_type}")
+                            else:
+                                if self.config.get('fragment_packs', {}).get('use_all_fragments', False):
+                                    claim_immediately = self.config.get('fragment_packs', {}).get('claim_immediately', True)
+                                    pk = private_key if claim_immediately else None
+                                    num_purchased = api.buy_packs_with_all_fragments(token, wallet_address, account_number, pack_id, pk)
+                                    
+                                    if num_purchased > 0:
+                                        success_log(f"Account {account_number}: Successfully purchased {num_purchased} fragment packs")
+                                else:
+                                    specific_quantity = self.config.get('fragment_packs', {}).get('specific_quantity', 0)
+                                    if specific_quantity > 0:
+                                        purchase_success = api.buy_fragment_pack(token, wallet_address, account_number, pack_id, specific_quantity)
+                                        
+                                        if purchase_success:
+                                            success_log(f"Account {account_number}: Successfully purchased {specific_quantity} fragment packs")
+                                            
+                                            if self.config.get('fragment_packs', {}).get('claim_immediately', True):
+                                                time.sleep(5)
+                                                api.process_fragment_packs(token, wallet_address, account_number, private_key)
+                                        else:
+                                            info_log(f"Account {account_number}: Failed to purchase fragment packs")
+                        except Exception as e:
+                            error_log(f"Error processing fragment packs purchase for account {account_number}: {str(e)}")
+                                        
                     if self.config['onboarding_quest']['enabled']:
                         onboarding_ids = self.config['onboarding_quest'].get('ids', [])
                         
@@ -597,3 +628,4 @@ class FantasyProcessor:
                     info_log(f'Wrote {wallet_address} to failure file')
             except Exception as e:
                 error_log(f'Error writing to failure file: {str(e)}')
+                
