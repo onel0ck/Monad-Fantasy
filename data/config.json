@@ -22,7 +22,7 @@
     },
     "tactic": {
         "enabled": false,
-        "id": "29d389d3-5b76-4d4e-9d2d-86c7d0f681d5",
+        "id": "",
         "max_toggle_attempts": 15,
         "delay_between_attempts": 2,
         "old_account": false,
@@ -50,16 +50,42 @@
     "quest": {
         "enabled": false,
         "ids": [
-            "ea7c4f8a-0db8-4a9d-a840-5f76cfb1fad5",
-            "ba57e629-9aee-4a2b-a02c-14713725f941"
+            "0",
+            "0"
         ]
     },
     "daily": {
-        "enabled": false
+        "enabled": true
     },
     "fragments": {
         "enabled": false,
-        "id": "69e67d0a-0a08-4085-889f-58df15bdecb8"
+        "id": ""
+    },
+    "fragment_packs": {
+        "enabled": true,
+        "buy_packs": true,
+        "claim_immediately": true,
+        "pack_type": "violet",
+        "specific_quantity": 1,
+        "use_all_fragments": false,
+        "pack_types": {
+            "violet": {
+                "id": "fa42e35e-611e-44de-90e7-819675d523e4",
+                "cost": 100
+            },
+            "emerald": {
+                "id": "786da1fa-1f9e-4dec-a898-a96fbed8d9c3",
+                "cost": 150
+            },
+            "sapphire": {
+                "id": "ac23fd6b-962b-4ad7-aebd-e28a51bf8626",
+                "cost": 650
+            },
+            "lavender": {
+                "id": "28213951-712c-4316-a364-57037c618738",
+                "cost": 3500
+            }
+        }
     },
     "onboarding_quest": {
         "enabled": false,
@@ -81,7 +107,7 @@
         ]
     },
     "starter_cards": {
-        "enabled": true,
+        "enabled": false,
         "contract_address": "0x9077d31a794d81c21b0650974d5f581f4000cd1a",
         "onboarding_quest_id": "66387328-ff2a-46a9-acb7-846b466934b6",
         "wait_time_after_claim": 5
@@ -92,7 +118,7 @@
     },
     "other_rewards": {
         "enabled": true,
-        "claim_packs": false
+        "claim_packs": true
     },
     "retry_failed_accounts": true,
     "info_check": true,
@@ -107,7 +133,7 @@
             },
             "silver": {
                 "enabled": false,
-                "id": "6ec6ed2c-0a87-45d1-a904-4b9a58c81388", 
+                "id": "3dc56849-6dfc-46ee-89df-ebb69c595990", 
                 "max_stars": 23
             },
             "gold": {
