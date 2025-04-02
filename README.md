@@ -48,7 +48,7 @@ The following settings in `config.json` are currently working:
     "info_check": true,             // Collect account information in result.txt
     "capmonster": {
         "enabled": true,            // Enable capmonster for captcha solving
-        "api_key": "your-api-key"   // Your Capmonster API key
+        "api_key": "your-api-key"   // Your Capmonster API key https://capmonster.cloud/
     },
     "2captcha": {
         "enabled": false,
