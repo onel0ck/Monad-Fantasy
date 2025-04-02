@@ -14,6 +14,8 @@ This script automates the processes of authorization and performing daily tasks 
 - Automatic tournament registration (Bronze, Silver, Gold, Elite)
 - Automatic tournament rewards checking and claiming
 - Using fragments for roulette spins
+- Buying fragment packs of different rarities
+- Automatic claiming of packs received from roulette and purchases
 - Analysis of account results and statistics
 
 ## Setup
@@ -48,7 +50,7 @@ The following settings in `config.json` are currently working:
     "info_check": true,             // Collect account information in result.txt
     "capmonster": {
         "enabled": true,            // Enable capmonster for captcha solving
-        "api_key": "your-api-key"   // Your Capmonster API key https://capmonster.cloud/
+        "api_key": "your-api-key"   // Your Capmonster API key
     },
     "2captcha": {
         "enabled": false,
@@ -82,6 +84,7 @@ The following settings in `config.json` are currently working:
     },
     "tournaments": {
         "enabled": true,            // Enable automatic tournament registration
+        "claim_rewards": true,      // Enable claiming tournament rewards
         "types": {
             "bronze": {
                 "enabled": true,    // Enable Bronze tournament registration
@@ -109,17 +112,83 @@ The following settings in `config.json` are currently working:
         "enabled": true,           // Enable fragment roulette
         "min_fragments": 50        // Minimum fragments required for spinning
     },
+    "fragment_packs": {
+        "enabled": true,           // Enable fragment packs features
+        "buy_packs": true,         // Enable buying packs with fragments
+        "claim_immediately": true, // Immediately claim packs after purchase
+        "pack_type": "violet",     // Pack type to buy (violet, emerald, sapphire, lavender)
+        "specific_quantity": 1,    // Number of packs to buy
+        "use_all_fragments": false, // Use all available fragments to buy packs
+        "pack_types": {            // Available pack types and their details
+            "violet": {
+                "id": "fa42e35e-611e-44de-90e7-819675d523e4",
+                "cost": 100
+            },
+            "emerald": {
+                "id": "786da1fa-1f9e-4dec-a898-a96fbed8d9c3",
+                "cost": 150
+            },
+            "sapphire": {
+                "id": "ac23fd6b-962b-4ad7-aebd-e28a51bf8626",
+                "cost": 650
+            },
+            "lavender": {
+                "id": "28213951-712c-4316-a364-57037c618738",
+                "cost": 3500
+            }
+        }
+    },
+    "other_rewards": {
+        "enabled": true,           // Enable other rewards claiming
+        "claim_packs": true        // Claim packs received from rewards
+    },
     "retry_failed_accounts": true
 }
 ```
 
-## New Features
+## Fragment Pack Features
 
-### Tournament Rewards Checking and Claiming
-The script now automatically checks for tournament rewards and claims them. This feature is enabled by default with `"info_check": true` and doesn't require additional settings.
+### Buying Packs
+The script now allows you to automatically buy fragment packs of different rarities:
 
+- **Violet Pack**: 100 fragments
+- **Emerald Pack**: 150 fragments
+- **Sapphire Pack**: 650 fragments
+- **Lavender Pack**: 3500 fragments
 
-### Results Analysis
+Configuration options:
+- `"enabled"`: Enable/disable the fragment packs feature
+- `"buy_packs"`: Enable/disable buying packs with fragments
+- `"claim_immediately"`: Automatically claim purchased packs
+- `"pack_type"`: Select which pack type to buy (violet, emerald, sapphire, lavender)
+- `"specific_quantity"`: Number of packs to buy
+- `"use_all_fragments"`: Use all available fragments to buy as many packs as possible
+
+### Claiming Packs
+The script can automatically claim packs received from:
+- Fragment roulette spins
+- Direct pack purchases
+- Any other rewards that include packs
+
+To enable automatic pack claiming:
+```json
+"other_rewards": {
+    "enabled": true,
+    "claim_packs": true
+}
+```
+
+## Tournament Rewards Checking and Claiming
+The script now automatically checks for tournament rewards and claims them. This feature is enabled with:
+```json
+"tournaments": {
+    "enabled": true,
+    "claim_rewards": true,
+    ...
+}
+```
+
+## Results Analysis
 A new script `analyze_results.py` has been added to the `logs` folder, which allows you to analyze account information from the `result.txt` file. The script provides the following statistics:
 
 - Total number of accounts, cards, fantasy points, fragments
