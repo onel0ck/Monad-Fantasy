@@ -43,7 +43,7 @@ class TournamentManager:
             }
             
             page = 1
-            limit = 19
+            limit = 100
             cards = []
             
             while True:
