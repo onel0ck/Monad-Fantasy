@@ -196,9 +196,16 @@ class TournamentManager:
         total_stars = 0
 
         filtered_cards = []
+        rares_amount = 0
         for card in sorted_cards:
             rarity = int(card.get("heroes", {}).get("rarity", 0))
+            if rarity == 3:
+                rares_amount += 1
             if max_stars == 18 and rarity < 4:
+                pass
+            elif max_stars == 23 and (
+                rarity < 3 or (rares_amount >= 2 and rarity == 3)
+            ):
                 pass
             else:
                 filtered_cards.append(card)
