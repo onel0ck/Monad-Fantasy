@@ -168,6 +168,8 @@ class TournamentManager:
             sorted_cards = sorted(available_cards, key=get_stars_safe, reverse=True)
 
             best_selection = self._find_optimal_card_selection(sorted_cards, max_stars)
+            if not best_selection:
+                return [], 0
 
             if not best_selection or len(best_selection) < 5:
                 sorted_by_stars_asc = sorted(available_cards, key=get_stars_safe)
@@ -188,7 +190,7 @@ class TournamentManager:
 
     def _find_optimal_card_selection(
         self, sorted_cards: List[Dict], max_stars: int
-    ) -> List[Dict]:
+    ) -> Optional[List[Dict]]:
         if len(sorted_cards) < 5:
             return []
 
@@ -210,6 +212,8 @@ class TournamentManager:
             else:
                 filtered_cards.append(card)
         sorted_cards = filtered_cards
+        if len(sorted_cards) < 5:
+            return None
 
         for card in sorted_cards:
             try:
