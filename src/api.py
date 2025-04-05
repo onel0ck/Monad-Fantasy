@@ -434,7 +434,7 @@ class FantasyAPI:
 
             except Exception as e:
                 error_log(f"Error during login attempt {attempt + 1}: {str(e)}")
-                print(traceback.format_exc())
+                # print(traceback.format_exc())
                 if attempt < max_retries - 1:
                     sleep(retry_delay)
                     continue
