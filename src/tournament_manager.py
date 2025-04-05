@@ -101,7 +101,7 @@ class TournamentManager:
                     break
 
                 for card in data.get("data", []):
-                    print(card)
+                    # print(card)
                     if not card.get("is_in_deck", False):
                         processed_card = {
                             "id": card.get("id"),
@@ -200,6 +200,10 @@ class TournamentManager:
                 card_stars = int(card.get("heroes", {}).get("stars", 0))
             except (ValueError, TypeError):
                 card_stars = 0
+
+            rarity = int(card.get("heroes", {}).get("rarity", 0))
+            if max_stars == 18 and rarity < 4:
+                continue
 
             if card_stars + total_stars <= max_stars:
                 selected.append(card)
