@@ -196,6 +196,7 @@ class FantasyProcessor:
         current_attempt = self.retry_manager.get_current_attempt(account_data)
 
         while current_attempt < max_attempts:
+            current_attempt += 1
             try:
                 thread_id = threading.get_ident()
                 self._wait_rate_limit(thread_id)
@@ -207,13 +208,13 @@ class FantasyProcessor:
                     proxy = self._get_random_proxy()
                     proxy_dict = {"http": proxy, "https": proxy}
 
-                    if current_attempt == 0:
+                    if current_attempt == 1:
                         info_log(
                             f"Processing account {account_number}: {wallet_address}"
                         )
                     else:
                         info_log(
-                            f"Retrying account {account_number}: {wallet_address} (Attempt {current_attempt + 1}/{max_attempts})"
+                            f"Retrying account {account_number}: {wallet_address} (Attempt {current_attempt}/{max_attempts})"
                         )
 
                     with self.lock:
@@ -232,7 +233,7 @@ class FantasyProcessor:
                     auth_data = None
                     token = None
 
-                    if current_attempt == 0:
+                    if current_attempt == 1:
                         stored_success, stored_token = (
                             api.token_manager.try_stored_credentials(
                                 wallet_address, account_number
@@ -249,7 +250,6 @@ class FantasyProcessor:
                             private_key, wallet_address, account_number
                         )
                         if auth_data is False:
-                            current_attempt += 1
                             session.close()
                             sleep(2)
                             continue
@@ -258,14 +258,12 @@ class FantasyProcessor:
                             info_log(
                                 f"Rate limit on login for account {account_number}, switching proxy..."
                             )
-                            current_attempt += 1
                             session.close()
                             sleep(2)
                             continue
 
                         token = api.get_token(auth_data, wallet_address, account_number)
                         if not token:
-                            current_attempt += 1
                             session.close()
                             sleep(2)
                             continue
@@ -697,7 +695,6 @@ class FantasyProcessor:
                             info_log(
                                 f"Rate limit on info check for account {account_number}, retrying..."
                             )
-                            current_attempt += 1
                             sleep(2)
                             continue
                         if not info_success:
@@ -756,7 +753,6 @@ class FantasyProcessor:
                         self.retry_manager.add_success_account(account_data)
                         return True
                     else:
-                        current_attempt += 1
                         session.close()
                         sleep(2)
                         continue
@@ -766,11 +762,9 @@ class FantasyProcessor:
                         info_log(
                             f"Rate limit exception for account {account_number}, retrying..."
                         )
-                        current_attempt += 1
                         sleep(2)
                         continue
                     error_log(f"Request error for account {account_number}: {str(e)}")
-                    current_attempt += 1
                     session.close()
                     sleep(2)
                     continue
@@ -781,7 +775,6 @@ class FantasyProcessor:
 
             except Exception as e:
                 error_log(f"Error processing account {account_number}: {str(e)}")
-                current_attempt += 1
                 sleep(2)
                 continue
 
