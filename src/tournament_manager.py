@@ -63,6 +63,7 @@ class TournamentManager:
                     proxies=self.api.proxies,
                     timeout=15
                 )
+                sleep(1)
                 
                 if response.status_code == 429:
                     info_log(f"Rate limit hit while fetching cards for account {account_number}, retrying...")

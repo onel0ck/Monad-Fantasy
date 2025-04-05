@@ -18,13 +18,14 @@ import threading
 import time
 import traceback
 
+REQUESTS_DELAY = 1
 
 class TokenManager:
     def __init__(self, account_storage, api_instance):
         self.account_storage = account_storage
         self.api = api_instance
         self.max_retries = 2
-        self.rate_limit_delay = 3
+        self.rate_limit_delay = 6
         self.stored_credentials_failed = set()
 
     def validate_token(self, token: str) -> bool:
@@ -226,7 +227,7 @@ class FantasyAPI:
 
     def login(self, private_key, wallet_address, account_number):
         max_retries = 3
-        retry_delay = 2
+        retry_delay = 6
         captcha_token = None
         
         info_log(f"Starting login process for account {account_number}: {wallet_address}")
@@ -261,6 +262,7 @@ class FantasyAPI:
                         continue
 
                 debug_log(f"Requesting nonce for account {account_number}")
+                sleep(REQUESTS_DELAY)
                 init_response = self.session.post(
                     'https://auth.privy.io/api/v1/siwe/init', 
                     json={'address': wallet_address, 'token': captcha_token},
@@ -295,6 +297,7 @@ class FantasyAPI:
                 }
 
                 debug_log(f"Sending authentication request for account {account_number}")
+                sleep(REQUESTS_DELAY)
                 auth_response = self.session.post(
                     'https://auth.privy.io/api/v1/siwe/authenticate',
                     json=auth_payload,
@@ -325,6 +328,7 @@ class FantasyAPI:
                 final_auth_payload = {"address": wallet_address}
                 
                 debug_log(f"Requesting application token for account {account_number}")
+                sleep(REQUESTS_DELAY)
                 final_auth_response = self.session.post(
                     'https://monad.fantasy.top/api/auth/privy',
                     json=final_auth_payload,
@@ -604,7 +608,7 @@ class FantasyAPI:
                 tournament_ids_str = tournament_ids
 
             debug_log(f"Claiming tournament rewards for account {account_number}: {tournament_ids_str}")
-            
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 f'https://secret-api.fantasy.top/rewards/tournament-rewards-claim/{tournament_ids_str}',
                 headers=headers,
@@ -617,7 +621,7 @@ class FantasyAPI:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
                 debug_log(f"Retrying claim with different token for account {account_number}")
-                
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     f'https://secret-api.fantasy.top/rewards/tournament-rewards-claim/{tournament_ids_str}',
                     headers=headers,
@@ -792,7 +796,7 @@ class FantasyAPI:
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site'
             }
-
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 f'https://secret-api.fantasy.top/rewards/rewards-claim/{reward_id}',
                 headers=headers,
@@ -805,6 +809,7 @@ class FantasyAPI:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
                 
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     f'https://secret-api.fantasy.top/rewards/rewards-claim/{reward_id}',
                     headers=headers,
@@ -1550,6 +1555,7 @@ class FantasyAPI:
                 'User-Agent': self.user_agent
             }
 
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 'https://secret-api.fantasy.top/rewards/buy-fragment-roulette',
                 headers=headers,
@@ -1561,6 +1567,7 @@ class FantasyAPI:
             if response.status_code == 401 and auth_token == privy_id_token and token:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     'https://secret-api.fantasy.top/rewards/buy-fragment-roulette',
                     headers=headers,
@@ -1631,6 +1638,7 @@ class FantasyAPI:
 
             debug_log(f"Purchasing {quantity} packs of type {pack_id} for account {account_number}")
             
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 'https://secret-api.fantasy.top/rewards/get-card-from-shards',
                 headers=headers,
@@ -1642,6 +1650,7 @@ class FantasyAPI:
             if response.status_code == 401 and auth_token == privy_id_token and token:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     'https://secret-api.fantasy.top/rewards/get-card-from-shards',
                     headers=headers,
@@ -1861,6 +1870,7 @@ class FantasyAPI:
 
         while True:
             try:
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     'https://secret-api.fantasy.top/quest/daily-claim',
                     headers=headers,
@@ -1917,6 +1927,7 @@ class FantasyAPI:
                     if auth_token == privy_id_token and token:
                         auth_token = token
                         headers['Authorization'] = f'Bearer {auth_token}'
+                        sleep(REQUESTS_DELAY)
                         response = self.session.post(
                             'https://secret-api.fantasy.top/quest/daily-claim',
                             headers=headers,
@@ -1970,6 +1981,7 @@ class FantasyAPI:
                 'Sec-Fetch-Site': 'same-site'
             }
 
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 f'https://secret-api.fantasy.top/quest/onboarding/complete/{quest_id}',
                 headers=headers,
@@ -1981,6 +1993,7 @@ class FantasyAPI:
             if response.status_code == 401 and auth_token == privy_id_token and token:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     f'https://secret-api.fantasy.top/quest/onboarding/complete/{quest_id}',
                     headers=headers,
@@ -2047,6 +2060,7 @@ class FantasyAPI:
                 "questThresholdId": quest_id
             }
 
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 f'{self.base_url}/quest/claim',
                 json=payload,
@@ -2088,6 +2102,7 @@ class FantasyAPI:
                 'Content-Length': '0'
             }
 
+            sleep(REQUESTS_DELAY)
             response = self.session.post(
                 f'{self.base_url}/quest/onboarding/complete/{fragment_id}',
                 headers=headers,
@@ -2379,6 +2394,7 @@ class FantasyAPI:
         for attempt in range(max_attempts):
             try:
                 info_log(f'Toggle attempt {attempt + 1}/{max_attempts} for account {account_number}')
+                sleep(REQUESTS_DELAY)
                 response = self.session.post(
                     f'{self.base_url}/tactics/toggle-can-play-free-tactics',
                     headers=headers, 
@@ -2538,6 +2554,7 @@ class FantasyAPI:
             }
 
             register_payload = {"tactic_id": self.config['tactic']['id']}
+            sleep(REQUESTS_DELAY)
             register_response = self.session.post(
                 f'{self.base_url}/tactics/register',
                 json=register_payload,
@@ -2591,6 +2608,7 @@ class FantasyAPI:
                                         "heroChoices": hero_choices
                                     }
 
+                                    sleep(REQUESTS_DELAY)
                                     save_response = self.session.post(
                                         f'{self.base_url}/tactics/save-deck',
                                         json=save_payload,
@@ -2716,6 +2734,7 @@ class FantasyAPI:
                 'Sec-Fetch-Site': 'same-site'
             }
 
+            sleep(REQUESTS_DELAY)
             onboarding_response = self.session.post(
                 f'https://secret-api.fantasy.top/quest/onboarding/complete/{pack_opening_quest_id}',
                 headers=headers,
@@ -2728,6 +2747,7 @@ class FantasyAPI:
                 auth_token = token
                 headers['Authorization'] = f'Bearer {auth_token}'
                 
+                sleep(REQUESTS_DELAY)
                 onboarding_response = self.session.post(
                     f'https://secret-api.fantasy.top/quest/onboarding/complete/{pack_opening_quest_id}',
                     headers=headers,
