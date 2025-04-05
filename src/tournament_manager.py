@@ -149,8 +149,8 @@ class TournamentManager:
     def select_best_cards_for_tournament(
         self, cards: List[Dict], max_stars: int, used_card_ids: List[str]
     ) -> Tuple[List[Dict], int]:
-        for card in cards:
-            print(card)
+        # for card in cards:
+        #    print(card)
         try:
             available_cards = [
                 card for card in cards if card["id"] not in used_card_ids
@@ -419,7 +419,7 @@ class TournamentManager:
             selected_cards, total_stars = self.select_best_cards_for_tournament(
                 cards, max_stars, used_card_ids
             )
-            print(selected_cards)
+            # print(selected_cards)
 
             if len(selected_cards) < 5:
                 if deck_number == 1:
