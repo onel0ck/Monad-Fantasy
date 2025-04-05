@@ -3,7 +3,7 @@ import time
 import random
 from typing import List, Dict, Optional, Tuple
 from colorama import Fore
-from .utils import error_log, success_log, info_log, debug_log
+from .utils import error_log, success_log, info_log, debug_log, get_sec_ch_ua, get_platform
 
 class TournamentManager:
     def __init__(self, api, config):
@@ -33,9 +33,9 @@ class TournamentManager:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.api.user_agent,
-                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua': get_sec_ch_ua(self.api.user_agent),
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
+                'sec-ch-ua-platform': get_platform(self.api.user_agent),
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site',
@@ -234,9 +234,9 @@ class TournamentManager:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.api.user_agent,
-                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua': get_sec_ch_ua(self.api.user_agent),
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"',
+                'sec-ch-ua-platform': get_platform(self.api.user_agent),
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site',

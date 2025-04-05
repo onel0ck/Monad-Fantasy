@@ -12,7 +12,7 @@ import os
 import jwt
 from typing import Dict, Optional, Tuple
 from colorama import Fore
-from .utils import error_log, success_log, info_log, rate_limit_log, debug_log
+from .utils import error_log, success_log, info_log, rate_limit_log, debug_log, get_platform, get_sec_ch_ua
 from capmonster_python import TurnstileTask
 import threading
 import time
@@ -244,9 +244,9 @@ class FantasyAPI:
                     'privy-client': 'react-auth:1.92.3',
                     'privy-client-id': 'client-WY5gEtuoV4UpG2Le3n5pt6QQD61Ztx62VDwtDCZeQc3sN',
                     'privy-ca-id': self.config['app'].get('privy_ca_id', 'c4c1258c-8ddb-4e96-83cd-caacbe1cf8a4'),
-                    'Sec-Ch-Ua': '"Google Chrome";v="132", "Chromium";v="132", "Not_A Brand";v="8"',
+                    'Sec-Ch-Ua': get_sec_ch_ua(self.user_agent),
                     'Sec-Ch-Ua-Mobile': '?0',
-                    'Sec-Ch-Ua-Platform': '"Windows"',
+                    'Sec-Ch-Ua-Platform': get_platform(self.user_agent),
                     'Sec-Fetch-Dest': 'empty',
                     'Sec-Fetch-Mode': 'cors',
                     'Sec-Fetch-Site': 'cross-site',
@@ -496,9 +496,9 @@ class FantasyAPI:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.user_agent,
-                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua': get_sec_ch_ua(self.user_agent),
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"'
+                'sec-ch-ua-platform': get_platform(self.user_agent)
             }
 
             rewards_response = self.session.get(
@@ -590,9 +590,9 @@ class FantasyAPI:
                 'Content-Length': '0',
                 'User-Agent': self.user_agent,
                 'Priority': 'u=1, i',
-                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'Sec-Ch-Ua': get_sec_ch_ua(self.user_agent),
                 'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Ch-Ua-Platform': get_platform(self.user_agent),
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site'
@@ -785,9 +785,9 @@ class FantasyAPI:
                 'Content-Length': '0',
                 'User-Agent': self.user_agent,
                 'Priority': 'u=1, i',
-                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'Sec-Ch-Ua': get_sec_ch_ua(self.user_agent),
                 'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Ch-Ua-Platform': get_platform(self.user_agent),
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site'
@@ -1337,9 +1337,9 @@ class FantasyAPI:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.user_agent,
-                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua': get_sec_ch_ua(self.user_agent),
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"'
+                'sec-ch-ua-platform': get_platform(self.user_agent)
             }
 
             response = self.session.get(
@@ -1619,9 +1619,9 @@ class FantasyAPI:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.user_agent,
-                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua': get_sec_ch_ua(self.user_agent),
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"'
+                'sec-ch-ua-platform': get_platform(self.user_agent)
             }
 
             payload = {
@@ -1851,9 +1851,9 @@ class FantasyAPI:
             'Content-Length': '0',
             'User-Agent': self.user_agent,
             'Priority': 'u=1, i',
-            'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+            'Sec-Ch-Ua': get_sec_ch_ua(self.user_agent),
             'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Ch-Ua-Platform': get_platform(self.user_agent),
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'same-site'
@@ -1962,9 +1962,9 @@ class FantasyAPI:
                 'Content-Length': '0',
                 'User-Agent': self.user_agent,
                 'Priority': 'u=1, i',
-                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'Sec-Ch-Ua': get_sec_ch_ua(self.user_agent),
                 'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Ch-Ua-Platform': get_platform(self.user_agent),
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site'
@@ -2133,9 +2133,9 @@ class FantasyAPI:
                 'Origin': 'https://monad.fantasy.top',
                 'Referer': 'https://monad.fantasy.top/',
                 'User-Agent': self.user_agent,
-                'sec-ch-ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'sec-ch-ua': get_sec_ch_ua(self.user_agent),
                 'sec-ch-ua-mobile': '?0',
-                'sec-ch-ua-platform': '"Windows"'
+                'sec-ch-ua-platform': get_platform(self.user_agent)
             }
 
             url = f'https://secret-api.fantasy.top/player/basic-data/{wallet_address}'
@@ -2708,9 +2708,9 @@ class FantasyAPI:
                 'Content-Length': '0',
                 'User-Agent': self.user_agent,
                 'Priority': 'u=1, i',
-                'Sec-Ch-Ua': '"Not A(Brand";v="8", "Chromium";v="132", "Google Chrome";v="132"',
+                'Sec-Ch-Ua': get_sec_ch_ua(self.user_agent),
                 'Sec-Ch-Ua-Mobile': '?0',
-                'Sec-Ch-Ua-Platform': '"Windows"',
+                'Sec-Ch-Ua-Platform': get_platform(self.user_agent),
                 'Sec-Fetch-Dest': 'empty',
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'same-site'
