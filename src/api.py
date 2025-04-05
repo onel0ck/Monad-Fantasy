@@ -274,7 +274,7 @@ class FantasyAPI:
                 )
                 
                 if init_response.status_code == 429:
-                    info_log(response.text)
+                    info_log(init_response.text)
                     info_log(f"Rate limit hit during nonce request for account {account_number}")
                     sleep(retry_delay)
                     continue
