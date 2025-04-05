@@ -91,6 +91,7 @@ class TokenManager:
         
         for attempt in range(2):
             try:
+                sleep(REQUESTS_DELAY)
                 response = self.api.session.get(
                     'https://fantasy.top/api/get-player-basic-data',
                     params={"playerId": wallet_address},
@@ -100,6 +101,7 @@ class TokenManager:
                 )
                 
                 if response.status_code == 429:
+                    info_log(response.text)
                     rate_limit_log(f'Rate limit hit while testing token for account {account_number}')
                     sleep(self.rate_limit_delay)
                     continue
@@ -272,6 +274,7 @@ class FantasyAPI:
                 )
                 
                 if init_response.status_code == 429:
+                    info_log(response.text)
                     info_log(f"Rate limit hit during nonce request for account {account_number}")
                     sleep(retry_delay)
                     continue
@@ -2073,6 +2076,7 @@ class FantasyAPI:
                 return True
 
             elif response.status_code == 429:
+                info_log(response.text)
                 info_log(f'Rate limit on quest claim for account {account_number}, retrying...')
                 return "429"
 
@@ -2321,6 +2325,7 @@ class FantasyAPI:
                 return True
                     
             elif response.status_code == 429:
+                info_log(response.text)
                 info_log(f'Rate limit on info check for account {account_number}, retrying...')
                 return "429"
             elif response.status_code == 401:
