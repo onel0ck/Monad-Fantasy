@@ -365,6 +365,8 @@ class FantasyAPI:
                     error_log(
                         f"Auth failed with status {auth_response.status_code} for account {account_number}"
                     )
+                    if auth_response.status_code == 422:
+                        return False
                     if attempt < max_retries - 1:
                         proxy = random.choice(self.all_proxies)
                         self.proxies = {"http": proxy, "https": proxy}
