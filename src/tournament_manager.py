@@ -101,6 +101,7 @@ class TournamentManager:
                     break
 
                 for card in data.get("data", []):
+                    print(card)
                     if not card.get("is_in_deck", False):
                         processed_card = {
                             "id": card.get("id"),
@@ -405,6 +406,7 @@ class TournamentManager:
             selected_cards, total_stars = self.select_best_cards_for_tournament(
                 cards, max_stars, used_card_ids
             )
+            print(selected_cards)
 
             if len(selected_cards) < 5:
                 if deck_number == 1:
