@@ -4,6 +4,7 @@ import random
 from typing import List, Dict, Optional, Tuple
 from colorama import Fore
 from .utils import error_log, success_log, info_log, debug_log, get_sec_ch_ua, get_platform
+from time import sleep
 
 class TournamentManager:
     def __init__(self, api, config):
