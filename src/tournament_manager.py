@@ -340,6 +340,7 @@ class TournamentManager:
                     info_log(
                         f"Unknown response {response.status_code} during tournament registration for account {account_number}, retrying ({retry_attempt+1}/{max_registration_retries})..."
                     )
+                    info_log(response.text)
                     debug_log(f"Registration response: {response.text}")
                     time.sleep(retry_delay)
 
@@ -410,19 +411,19 @@ class TournamentManager:
                     results[active_tournament_type] = False
                 else:
                     info_log(
-                        f"No more complete decks available for {active_tournament_type} tournament (registered {deck_number-1} decks)"
+                        f"No more complete decks available for {active_tournament_type} tournament (registered {deck_number-1} decks) for account {account_number}"
                     )
                 break
 
             if total_stars > max_stars:
                 if deck_number == 1:
                     info_log(
-                        f"Selected cards exceed star limit for {active_tournament_type} tournament: {total_stars} > {max_stars}"
+                        f"Selected cards exceed star limit for {active_tournament_type} tournament: {total_stars} > {max_stars} for account {account_number}"
                     )
                     results[active_tournament_type] = False
                 else:
                     info_log(
-                        f"No more valid decks within star limit for {active_tournament_type} tournament"
+                        f"No more valid decks within star limit for {active_tournament_type} tournament for account {account_number}"
                     )
                 break
 
