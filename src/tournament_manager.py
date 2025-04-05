@@ -110,6 +110,10 @@ class TournamentManager:
                                     "name",
                                     card.get("heroes", {}).get("name", "Unknown"),
                                 ),
+                                "rarity": card.get(
+                                    "rarity",
+                                    card.get("heroes", {}).get("rarity", 0),
+                                ),
                                 "handle": card.get(
                                     "handle",
                                     card.get("heroes", {}).get("handle", "Unknown"),
