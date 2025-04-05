@@ -18,7 +18,7 @@ import threading
 import time
 import traceback
 
-REQUESTS_DELAY = 1
+REQUESTS_DELAY = 2
 
 class TokenManager:
     def __init__(self, account_storage, api_instance):
@@ -2018,6 +2018,7 @@ class FantasyAPI:
                 return True
 
             error_log(f'Onboarding quest claim failed for account {account_number}: {response.status_code}')
+            error_log(response.text)
             return False
 
         except Exception as e:
@@ -2090,6 +2091,7 @@ class FantasyAPI:
                             return self.quest_claim(new_token, wallet_address, account_number, quest_id)
 
             error_log(f'Quest claim failed for account {account_number}: {response.status_code}')
+            error_log(response.text)
             return False
 
         except Exception as e:
@@ -2129,6 +2131,7 @@ class FantasyAPI:
                 return True
 
             error_log(f'Fragment claim failed for account {account_number}: {response.status_code}')
+            error_log(response.text)
             return False
 
         except Exception as e:
