@@ -25,6 +25,7 @@ from capmonster_python import TurnstileTask
 import threading
 import time
 import traceback
+import traceback
 
 REQUESTS_DELAY = 2
 
@@ -433,6 +434,7 @@ class FantasyAPI:
 
             except Exception as e:
                 error_log(f"Error during login attempt {attempt + 1}: {str(e)}")
+                print(traceback.format_exc())
                 if attempt < max_retries - 1:
                     sleep(retry_delay)
                     continue
