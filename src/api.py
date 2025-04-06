@@ -420,8 +420,7 @@ class FantasyAPI:
 
                 final_auth_data = final_auth_response.json()
                 cookies_dict = {
-                    cookie: self.session.cookies[cookie]
-                    for cookie in self.session.cookies
+                    cookie.name: cookie.value for cookie in self.session.cookies.jar
                 }
 
                 self.account_storage.update_account(
