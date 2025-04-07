@@ -33,25 +33,6 @@ def print_banner():
     print(banner)
 
 
-def get_start_delay():
-    while True:
-        try:
-            delay = input(
-                f"\n{Fore.YELLOW}Enter delay before start (in seconds): {Fore.RESET}"
-            )
-            if not delay.strip():
-                print(f"{Fore.RED}Please enter a number{Fore.RESET}")
-                continue
-
-            seconds = int(delay)
-            if seconds < 0:
-                print(f"{Fore.RED}Please enter a positive number{Fore.RESET}")
-                continue
-            return seconds
-        except ValueError:
-            print(f"{Fore.RED}Please enter a valid number{Fore.RESET}")
-
-
 def start_countdown(seconds):
     if seconds <= 0:
         return
@@ -90,9 +71,6 @@ def main():
     print_banner()
 
     try:
-        delay_seconds = get_start_delay()
-        start_countdown(delay_seconds)
-
         config = load_config()
         config = validate_tournament_config(config)
 
