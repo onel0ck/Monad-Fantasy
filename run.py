@@ -118,6 +118,12 @@ def main():
                 )
                 futures.append(future)
 
+                if "acc_delays" in config["app"]:
+                    delay_config = config["app"]["acc_delays"]
+                    delay_sec = random.randint(delay_config[0], delay_config[1])
+                    delay_task = executor.submit(sleep, delay_sec)
+                    futures.append(delay_task)
+
             concurrent.futures.wait(futures)
 
         processor.retry_failed_accounts()
