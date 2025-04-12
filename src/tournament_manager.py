@@ -285,6 +285,7 @@ class TournamentManager:
     def register_for_tournament(
         self,
         token: str,
+        tournament_type: str,
         wallet_address: str,
         account_number: int,
         tournament_id: str,
@@ -368,7 +369,7 @@ class TournamentManager:
 
                     if response.status_code in [200, 201]:
                         success_log(
-                            f"Successfully registered account {account_number} in tournament {tournament_id} (Deck #{deck_number})"
+                            f"Successfully registered account {account_number} in tournament {tournament_type} = {tournament_id} (Deck #{deck_number})"
                         )
                         return True
 
@@ -498,6 +499,7 @@ class TournamentManager:
 
                     success = self.register_for_tournament(
                         token,
+                        active_tournament_type
                         wallet_address,
                         account_number,
                         tournament_id,

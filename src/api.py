@@ -316,7 +316,6 @@ class FantasyAPI:
 
                 debug_log(f"Requesting nonce for account {account_number}")
                 sleep(REQUESTS_DELAY)
-                info_log("Request nonce")
                 init_response = self.session.post(
                     "https://auth.privy.io/api/v1/siwe/init",
                     json={"address": wallet_address, "token": captcha_token},
