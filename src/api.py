@@ -259,9 +259,9 @@ class FantasyAPI:
         return self.captcha_pool.get_token()
 
     def _get_privy_token_id(self) -> Optional[str]:
-        for cookie in self.session.cookies:
-            if cookie == "privy-id-token":
-                return self.session.cookies[cookie]
+        for cookie in self.session.cookies.jar:
+            if cookie.name == "privy-id-token":
+                return cookie.value
 
         return None
 
