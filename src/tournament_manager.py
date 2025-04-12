@@ -405,12 +405,14 @@ class TournamentManager:
             info_log(f"No cards available for account {account_number}")
             return {t_type: False for t_type in tournament_ids.keys()}
 
+        print(tournament_ids)
         active_tournament_type = None
         for t_type, t_id in tournament_ids.items():
             if t_id:
                 active_tournament_type = t_type
                 break
 
+        print(active_tournament_type)
         if not active_tournament_type:
             info_log(f"No active tournament selected for account {account_number}")
             return {}
