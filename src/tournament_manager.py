@@ -499,7 +499,7 @@ class TournamentManager:
 
                     success = self.register_for_tournament(
                         token,
-                        active_tournament_type
+                        active_tournament_type,
                         wallet_address,
                         account_number,
                         tournament_id,
