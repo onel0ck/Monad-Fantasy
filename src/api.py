@@ -2718,7 +2718,7 @@ class FantasyAPI:
                 success_log(
                     f"Info collected for account {account_number}: {wallet_address} | "
                     f"fMON:{fantasy_points}, Cards:{number_of_cards}, "
-                    f"Portfolio:{portfolio_value}, Onboarding:{is_onboarding_done}"
+                    f"Portfolio:{portfolio_value}, Fragments:{fragments}, Onboarding:{is_onboarding_done}"
                 )
                 return True
 
