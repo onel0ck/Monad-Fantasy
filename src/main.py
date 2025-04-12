@@ -709,6 +709,9 @@ class FantasyProcessor:
                         for t_type, t_config in self.config["tournaments"][
                             "types"
                         ].items():
+                            print(
+                                f'{t_type}: {t_config.get("enabled", False)}: {t_config.get("id")}'
+                            )
                             if t_config.get("enabled", False) and t_config.get("id"):
                                 tournament_ids[t_type] = t_config["id"]
 
