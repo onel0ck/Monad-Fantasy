@@ -706,6 +706,7 @@ class FantasyProcessor:
                         tournament_manager = TournamentManager(api, self.config)
 
                         tournament_ids = {}
+                        print(self.config["tournaments"]["types"])
                         for t_type, t_config in self.config["tournaments"][
                             "types"
                         ].items():
