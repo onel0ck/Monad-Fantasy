@@ -258,6 +258,11 @@ class FantasyAPI:
     def _get_captcha_token(self) -> Optional[str]:
         return self.captcha_pool.get_token()
 
+    def _switch_proxy(self):
+        proxy = random.choice(self.all_proxies)
+        self.proxies = {"http": proxy, "https": proxy}
+        info_log(f"Switching proxy")
+
     def _get_privy_token_id(self) -> Optional[str]:
         for cookie in self.session.cookies.jar:
             if cookie.name == "privy-id-token":
@@ -325,6 +330,7 @@ class FantasyAPI:
                     info_log(
                         f"Rate limit hit during nonce request for account {account_number}"
                     )
+                    self._switch_proxy()
                     sleep(retry_delay)
                     continue
 
@@ -367,10 +373,9 @@ class FantasyAPI:
                     )
                     if auth_response.status_code == 422:
                         return False
+
                     if attempt < max_retries - 1:
-                        proxy = random.choice(self.all_proxies)
-                        self.proxies = {"http": proxy, "https": proxy}
-                        info_log(f"Switching proxy for account {account_number}")
+                        self._switch_proxy()
                         sleep(retry_delay)
                         continue
                     return False
