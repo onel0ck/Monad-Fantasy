@@ -199,24 +199,39 @@ class TournamentManager:
 
         filtered_cards = []
         rares_amount = 0
+        epics_amount = 0
+        legends_amount = 0
         for card in sorted_cards:
             rarity = int(card.get("heroes", {}).get("rarity", 0))
             if rarity == 3:
                 rares_amount += 1
+            elif rarity == 2:
+                epics_amount += 1
+            elif rarity == 1:
+                legends_amount += 1
+
             if max_stars == 18 and rarity < 4:
                 # no rares in bronze
                 pass
-            elif max_stars == 23 and (
-                rarity < 3 or (rares_amount >= 2 and rarity == 3)
+            elif max_stars == 23 and (rarity < 3 or (rares_amount > 3 and rarity == 3)):
+                # max 3 rares
+                pass
+            elif max_stars == 25 and (
+                rarity < 2
+                or (rares_amount > 4 and rarity == 3)
+                or (epics_amount > 2 and rarity == 2)
             ):
-                # not more than 2 rares in silver
                 pass
             else:
                 filtered_cards.append(card)
 
         if max_stars == 23 and rares_amount == 0:
-            info_log(f"Not enough rares to register in silver (rares = {rares_amount})")
+            info_log(f"No rares to register in silver")
             return None
+        elif max_stars == 25 and epics_amount == 0:
+            info_log(f"No epics to register in silver")
+        elif max_stars > 26 and legends_amount == 0:
+            info_log(f"No legends to register in elite")
 
         sorted_cards = filtered_cards
         if len(sorted_cards) < 5:
