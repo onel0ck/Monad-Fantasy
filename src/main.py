@@ -706,14 +706,10 @@ class FantasyProcessor:
                         tournament_manager = TournamentManager(api, self.config)
 
                         tournament_ids = {}
-                        print(self.config["tournaments"]["types"])
                         for t_type, t_config in self.config["tournaments"][
                             "types"
                         ].items():
-                            print(
-                                f'{t_type}: {t_config.get("enabled", False)}: {t_config.get("id")}'
-                            )
-                            if t_config.get("enabled", False) and t_config.get("id"):
+                            if t_config.get("id"):
                                 tournament_ids[t_type] = t_config["id"]
 
                         if tournament_ids:
