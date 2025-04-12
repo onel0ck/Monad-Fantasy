@@ -204,13 +204,20 @@ class TournamentManager:
             if rarity == 3:
                 rares_amount += 1
             if max_stars == 18 and rarity < 4:
+                # no rares in bronze
                 pass
             elif max_stars == 23 and (
                 rarity < 3 or (rares_amount >= 2 and rarity == 3)
             ):
+                # not more than 2 rares in silver
                 pass
             else:
                 filtered_cards.append(card)
+
+        if max_stars == 23 and rares_amount == 0:
+            info_log(f"Not enough rares to register in silver (rares = {rares_amount})")
+            return None
+
         sorted_cards = filtered_cards
         if len(sorted_cards) < 5:
             return None
@@ -406,6 +413,7 @@ class TournamentManager:
             return {t_type: False for t_type in tournament_ids.keys()}
 
         print(tournament_ids)
+        used_card_ids = []
 
         tournaments_types_ordered = ["elite", "gold", "silver", "bronze"]
         for active_tournament_type in tournaments_types_ordered:
@@ -419,10 +427,10 @@ class TournamentManager:
             #        active_tournament_type = t_type
             #        break
 
-            print(active_tournament_type)
-            if not active_tournament_type:
-                info_log(f"No active tournament selected for account {account_number}")
-                return {}
+            # print(active_tournament_type)
+            # if not active_tournament_type:
+            #    info_log(f"No active tournament selected for account {account_number}")
+            #    return {}
 
             tournament_id = tournament_ids[active_tournament_type]
             max_stars = self.tournament_types[active_tournament_type]["max_stars"]
@@ -431,7 +439,6 @@ class TournamentManager:
                 f"Attempting to register account {account_number} in {active_tournament_type.capitalize()} tournament"
             )
 
-            used_card_ids = []
             deck_number = 1
             registration_successful = False
 
@@ -473,7 +480,17 @@ class TournamentManager:
                         name = card.get("heroes", {}).get("name", "Unknown")
                         clean_name = "".join(c for c in name if ord(c) < 128)
                         stars = card.get("heroes", {}).get("stars", 0)
-                        clean_card_info.append(f"{clean_name} ({stars}*)")
+                        info = f"{clean_name} ({stars}*)"
+                        rarity = int(card.get("heroes", {}).get("rarity", 0))
+                        if rarity == 4:
+                            info = f"{info} (COMMON)"
+                        elif rarity == 3:
+                            info = f"{info} (RARE)"
+                        elif rarity == 2:
+                            info = f"{info} (EPIC)"
+                        elif rarity == 1:
+                            info = f"{info} (LEGEND)"
+                        clean_card_info.append(info)
 
                     info_log(
                         f"Selected cards for {active_tournament_type} tournament deck #{deck_number} (total {total_stars}*): {', '.join(clean_card_info)}"
