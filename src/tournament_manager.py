@@ -237,6 +237,16 @@ class TournamentManager:
         if len(sorted_cards) < 5:
             return None
 
+        sorted_cards = sorted(
+            sorted_cards,
+            key=lambda x: (
+                int(x.get("heroes", {}).get("rarity", 0)),
+                int(x.get("heroes", {}).get("stars", 0)),
+            ),
+            reverse=True,
+        )
+        print(sorted_cards)
+
         for card in sorted_cards:
             try:
                 card_stars = int(card.get("heroes", {}).get("stars", 0))
