@@ -608,6 +608,9 @@ class TournamentManager:
                     if deck_number == 1:
                         results[active_tournament_type] = False
                     break
+                if min_stars == 18:
+                    # attemp to reg only one deck for reverse
+                    break
 
             results[active_tournament_type] = registration_successful
         return results
