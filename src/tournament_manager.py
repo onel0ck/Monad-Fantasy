@@ -222,17 +222,12 @@ class TournamentManager:
         for card in sorted_cards:
             rarity = int(card.get("heroes", {}).get("rarity", 0))
             score = int(card.get("card_weighted_score", 0))
-            if rarity == 3:
-                rares_amount += 1
-            elif rarity == 2:
-                epics_amount += 1
-            elif rarity == 1:
-                legends_amount += 1
+            added = False
 
             if min_stars == 18 and (
-                (rarity == 3 and rares_amount > 1)
-                or (rarity == 2 and epics_amount > 1)
-                or (rarity == 1 and legends_amount > 1)
+                (rarity == 3 and rares_amount >= 1)
+                or (rarity == 2 and epics_amount >= 1)
+                or (rarity == 1 and legends_amount >= 1)
             ):
                 # max 1 rare / 1 epic / 1 legend
                 pass
@@ -240,20 +235,29 @@ class TournamentManager:
                 # no rares in bronze
                 pass
             elif max_stars == 23 and (
-                rarity < 3 or (rares_amount > 3 and rarity == 3) or (score < 100)
+                rarity < 3 or (rares_amount >= 3 and rarity == 3) or (score < 100)
             ):
                 # max 3 rares in silver, score != 0
                 pass
             elif max_stars == 25 and (
                 rarity < 2
-                or (rares_amount > 4 and rarity == 3)
-                or (epics_amount > 2 and rarity == 2)
+                or (rares_amount >= 4 and rarity == 3)
+                or (epics_amount >= 2 and rarity == 2)
                 or score < 100
             ):
                 # max 4rare, 2epics, score != 0
                 pass
             else:
+                added = True
                 filtered_cards.append(card)
+
+            if added:
+                if rarity == 3:
+                    rares_amount += 1
+                elif rarity == 2:
+                    epics_amount += 1
+                elif rarity == 1:
+                    legends_amount += 1
 
         if min_stars == 18:
             pass
