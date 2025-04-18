@@ -240,7 +240,7 @@ class TournamentManager:
                 # no rares in bronze
                 pass
             elif max_stars == 23 and (
-                rarity < 3 or (rares_amount > 3 and rarity == 3) or (score == 0)
+                rarity < 3 or (rares_amount > 3 and rarity == 3) or (score < 100)
             ):
                 # max 3 rares in silver, score != 0
                 pass
@@ -248,7 +248,7 @@ class TournamentManager:
                 rarity < 2
                 or (rares_amount > 4 and rarity == 3)
                 or (epics_amount > 2 and rarity == 2)
-                or score == 0
+                or score < 100
             ):
                 # max 4rare, 2epics, score != 0
                 pass
