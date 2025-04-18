@@ -127,16 +127,6 @@ class TournamentManager:
                                 "stars": card.get(
                                     "stars", card.get("heroes", {}).get("stars", 0)
                                 ),
-                                "expected_score": card.get(
-                                    "expected_score",
-                                    card.get("heroes", {}).get("expected_score", 0),
-                                ),
-                                "fantasy_score": card.get(
-                                    "fantasy_score",
-                                    card.get("heroes", {})
-                                    .get("current", {})
-                                    .get("fantasy_score", 0),
-                                ),
                             },
                             "card_weighted_score": card.get(
                                 "card_weighted_score", card.get("weighted_score", 0)
@@ -250,7 +240,10 @@ class TournamentManager:
             else:
                 filtered_cards.append(card)
 
-        if max_stars == 23 and rares_amount == 0:
+        if min_stars == 18:
+            pass
+
+        elif max_stars == 23 and rares_amount == 0:
             info_log(f"No rares to register in silver")
             return None
 
@@ -346,7 +339,7 @@ class TournamentManager:
             sorted_cards,
             key=lambda x: (
                 int(x.get("heroes", {}).get("stars", 0)),
-                int(x.get("heroes", {}).get("fantasy_score", 0)),
+                int(x.get("card_weighted_score", 0)),
             ),
             reverse=False,
         )
@@ -359,8 +352,7 @@ class TournamentManager:
             )
             if stars_sum >= 18:
                 score_sum = sum(
-                    int(item.get("heroes", {}).get("fantasy_score", 0))
-                    for item in combo
+                    int(item.get("card_weighted_score", 0)) for item in combo
                 )
                 current = (score_sum, stars_sum, combo)
 
