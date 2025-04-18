@@ -129,8 +129,13 @@ class TournamentManager:
                                     "stars", card.get("heroes", {}).get("stars", 0)
                                 ),
                             },
-                            "card_weighted_score": card.get(
-                                "card_weighted_score", card.get("weighted_score", 0)
+                            "card_weighted_score": int(
+                                float(
+                                    card.get(
+                                        "card_weighted_score",
+                                        card.get("weighted_score", 0),
+                                    )
+                                )
                             ),
                         }
                         cards.append(processed_card)
