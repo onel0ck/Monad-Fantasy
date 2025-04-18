@@ -270,67 +270,21 @@ class TournamentManager:
             ),
             reverse=True,
         )
-        # print(sorted_cards)
 
-        for card in sorted_cards:
-            try:
-                card_stars = int(card.get("heroes", {}).get("stars", 0))
-            except (ValueError, TypeError):
-                card_stars = 0
+        best = None  # (score_sum, combo)
 
-            if card_stars + total_stars <= max_stars:
-                selected.append(card)
-                total_stars += card_stars
-                if len(selected) == 5:
-                    break
-
-        if len(selected) == 5:
-            return selected
-
-        selected = []
-        total_stars = 0
-
-        value_sorted = []
-        for card in sorted_cards:
-
-            try:
-                stars = int(card.get("heroes", {}).get("stars", 1))
-                if stars <= 0:
-                    stars = 1
-
-                weighted_score = float(card.get("card_weighted_score", 0))
-                ratio = weighted_score / stars
-
-                value_sorted.append((card, ratio))
-            except (ValueError, TypeError):
-                value_sorted.append((card, 0))
-
-        value_sorted.sort(key=lambda x: x[1], reverse=True)
-
-        sorted_by_value = [item[0] for item in value_sorted]
-
-        for card in sorted_by_value:
-            try:
-                card_stars = int(card.get("heroes", {}).get("stars", 0))
-            except (ValueError, TypeError):
-                card_stars = 0
-
-            if card_stars + total_stars <= max_stars:
-                selected.append(card)
-                total_stars += card_stars
-                if len(selected) == 5:
-                    break
-
-        if len(selected) == 5:
-            return selected
-
-        try:
-            sorted_by_stars = sorted(
-                sorted_cards, key=lambda x: int(x.get("heroes", {}).get("stars", 0))
+        for combo in combinations(sorted_cards, 5):
+            stars_sum = sum(
+                int(item.get("heroes", {}).get("stars", 0)) for item in combo
             )
-            return sorted_by_stars[:5]
-        except (ValueError, TypeError):
-            return sorted_cards[:5]
+            if stars_sum <= max_stars:
+                score_sum = sum(
+                    int(item.get("card_weighted_score", 0)) for item in combo
+                )
+                if best is None or score_sum > best[0]:
+                    best = (score_sum, combo)
+
+        return best[1] if best else None
 
     def _find_optimal_cards_for_reverse(
         self, cards: List[Dict]
