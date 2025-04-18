@@ -336,7 +336,7 @@ class TournamentManager:
         self, cards: List[Dict]
     ) -> Optional[List[Dict]]:
         sorted_cards = sorted(
-            sorted_cards,
+            cards,
             key=lambda x: (
                 int(x.get("heroes", {}).get("stars", 0)),
                 int(x.get("card_weighted_score", 0)),
@@ -346,7 +346,7 @@ class TournamentManager:
 
         best = None  # Хранит кортеж (score_sum, stars_sum, combination)
 
-        for combo in combinations(cards, 5):
+        for combo in combinations(sorted_cards, 5):
             stars_sum = sum(
                 int(item.get("heroes", {}).get("stars", 0)) for item in combo
             )
