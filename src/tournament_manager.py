@@ -533,8 +533,10 @@ class TournamentManager:
                         name = card.get("heroes", {}).get("name", "Unknown")
                         clean_name = "".join(c for c in name if ord(c) < 128)
                         stars = card.get("heroes", {}).get("stars", 0)
-                        info = f"{clean_name} ({stars}*)"
+                        score = int(card.get("card_weighted_score"))
+                        info = f"{clean_name} ({stars}* {score}s)"
                         rarity = int(card.get("heroes", {}).get("rarity", 0))
+
                         if rarity == 4:
                             info = f"{info} (COMMON)"
                         elif rarity == 3:
