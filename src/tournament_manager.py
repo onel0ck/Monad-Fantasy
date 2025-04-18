@@ -221,6 +221,7 @@ class TournamentManager:
         legends_amount = 0
         for card in sorted_cards:
             rarity = int(card.get("heroes", {}).get("rarity", 0))
+            score = int(card.get("card_weighted_score", 0))
             if rarity == 3:
                 rares_amount += 1
             elif rarity == 2:
@@ -228,20 +229,28 @@ class TournamentManager:
             elif rarity == 1:
                 legends_amount += 1
 
-            if min_stars == 18 and rarity < 4:
-                # only commons
+            if min_stars == 18 and (
+                (rarity == 3 and rares_amount > 1)
+                or (rarity == 2 and epics_amount > 1)
+                or (rarity == 1 and legends_amount > 1)
+            ):
+                # max 1 rare / 1 epic / 1 legend
                 pass
             if max_stars == 18 and rarity < 4:
                 # no rares in bronze
                 pass
-            elif max_stars == 23 and (rarity < 3 or (rares_amount > 3 and rarity == 3)):
-                # max 3 rares
+            elif max_stars == 23 and (
+                rarity < 3 or (rares_amount > 3 and rarity == 3) or (score == 0)
+            ):
+                # max 3 rares in silver, score != 0
                 pass
             elif max_stars == 25 and (
                 rarity < 2
                 or (rares_amount > 4 and rarity == 3)
                 or (epics_amount > 2 and rarity == 2)
+                or score == 0
             ):
+                # max 4rare, 2epics, score != 0
                 pass
             else:
                 filtered_cards.append(card)
