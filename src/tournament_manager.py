@@ -12,6 +12,7 @@ from .utils import (
     get_platform,
 )
 from time import sleep
+from itertools import combinations
 
 
 class TournamentManager:
@@ -23,6 +24,11 @@ class TournamentManager:
             "silver": {"max_stars": 23, "name": "Silver Tournament"},
             "gold": {"max_stars": 25, "name": "Gold Tournament"},
             "elite": {"max_stars": float("inf"), "name": "Elite Tournament"},
+            "reverse": {
+                "max_stars": float("inf"),
+                "min_stars": 18,
+                "name": "Reverse Tournament",
+            },
         }
 
     def fetch_player_cards(
@@ -121,13 +127,23 @@ class TournamentManager:
                                 "stars": card.get(
                                     "stars", card.get("heroes", {}).get("stars", 0)
                                 ),
+                                "expected_score": card.get(
+                                    "expected_score",
+                                    card.get("heroes", {}).get("expected_score", 0),
+                                ),
+                                "fantasy_score": card.get(
+                                    "fantasy_score",
+                                    card.get("heroes", {})
+                                    .get("current", {})
+                                    .get("fantasy_score", 0),
+                                ),
                             },
                             "card_weighted_score": card.get(
                                 "card_weighted_score", card.get("weighted_score", 0)
                             ),
                         }
                         cards.append(processed_card)
-
+                print(cards)
                 meta = data.get("meta", {})
                 current_page = meta.get("currentPage", 0)
                 last_page = meta.get("lastPage", 0)
@@ -147,7 +163,11 @@ class TournamentManager:
             return []
 
     def select_best_cards_for_tournament(
-        self, cards: List[Dict], max_stars: int, used_card_ids: List[str]
+        self,
+        cards: List[Dict],
+        max_stars: int,
+        min_stars: int,
+        used_card_ids: List[str],
     ) -> Tuple[List[Dict], int]:
         # for card in cards:
         #    print(card)
@@ -167,7 +187,9 @@ class TournamentManager:
 
             sorted_cards = sorted(available_cards, key=get_stars_safe, reverse=True)
 
-            best_selection = self._find_optimal_card_selection(sorted_cards, max_stars)
+            best_selection = self._find_optimal_card_selection(
+                sorted_cards, max_stars, min_stars
+            )
             if not best_selection:
                 return [], 0
 
@@ -189,7 +211,7 @@ class TournamentManager:
             return [], 0
 
     def _find_optimal_card_selection(
-        self, sorted_cards: List[Dict], max_stars: int
+        self, sorted_cards: List[Dict], max_stars: int, min_stars: int = 0
     ) -> Optional[List[Dict]]:
         if len(sorted_cards) < 5:
             return []
@@ -210,6 +232,9 @@ class TournamentManager:
             elif rarity == 1:
                 legends_amount += 1
 
+            if min_stars == 18 and rarity < 4:
+                # only commons
+                pass
             if max_stars == 18 and rarity < 4:
                 # no rares in bronze
                 pass
@@ -228,14 +253,21 @@ class TournamentManager:
         if max_stars == 23 and rares_amount == 0:
             info_log(f"No rares to register in silver")
             return None
+
         elif max_stars == 25 and epics_amount == 0:
-            info_log(f"No epics to register in silver")
+            info_log(f"No epics to register in gold")
+            return None
+
         elif max_stars > 26 and legends_amount == 0:
             info_log(f"No legends to register in elite")
+            return None
 
         sorted_cards = filtered_cards
         if len(sorted_cards) < 5:
             return None
+
+        if min_stars == 18:
+            return self._find_optimal_cards_for_reverse(sorted_cards)
 
         sorted_cards = sorted(
             sorted_cards,
@@ -245,7 +277,7 @@ class TournamentManager:
             ),
             reverse=True,
         )
-        print(sorted_cards)
+        # print(sorted_cards)
 
         for card in sorted_cards:
             try:
@@ -306,6 +338,40 @@ class TournamentManager:
             return sorted_by_stars[:5]
         except (ValueError, TypeError):
             return sorted_cards[:5]
+
+    def _find_optimal_cards_for_reverse(
+        self, cards: List[Dict]
+    ) -> Optional[List[Dict]]:
+        sorted_cards = sorted(
+            sorted_cards,
+            key=lambda x: (
+                int(x.get("heroes", {}).get("stars", 0)),
+                int(x.get("heroes", {}).get("fantasy_score", 0)),
+            ),
+            reverse=False,
+        )
+
+        best = None  # Хранит кортеж (score_sum, stars_sum, combination)
+
+        for combo in combinations(cards, 5):
+            stars_sum = sum(
+                int(item.get("heroes", {}).get("stars", 0)) for item in combo
+            )
+            if stars_sum >= 18:
+                score_sum = sum(
+                    int(item.get("heroes", {}).get("fantasy_score", 0))
+                    for item in combo
+                )
+                current = (score_sum, stars_sum, combo)
+
+                if (
+                    best is None
+                    or (current[0] < best[0])
+                    or (current[0] == best[0] and current[1] < best[1])
+                ):
+                    best = current
+
+        return best[2] if best else None
 
     def register_for_tournament(
         self,
@@ -441,7 +507,7 @@ class TournamentManager:
         print(tournament_ids)
         used_card_ids = []
 
-        tournaments_types_ordered = ["elite", "gold", "silver", "bronze"]
+        tournaments_types_ordered = ["elite", "gold", "silver", "reverse", "bronze"]
         for active_tournament_type in tournaments_types_ordered:
             t_id = tournament_ids.get(active_tournament_type, None)
             if not t_id:
@@ -460,6 +526,9 @@ class TournamentManager:
 
             tournament_id = tournament_ids[active_tournament_type]
             max_stars = self.tournament_types[active_tournament_type]["max_stars"]
+            min_stars = self.tournament_types[active_tournament_type].get(
+                "min_stars", 0
+            )
 
             info_log(
                 f"Attempting to register account {account_number} in {active_tournament_type.capitalize()} tournament"
@@ -470,7 +539,7 @@ class TournamentManager:
 
             while True:
                 selected_cards, total_stars = self.select_best_cards_for_tournament(
-                    cards, max_stars, used_card_ids
+                    cards, max_stars, min_stars, used_card_ids
                 )
                 # print(selected_cards)
 
