@@ -13,6 +13,7 @@ from .utils import (
 )
 from time import sleep
 from itertools import combinations
+from functools import reduce
 
 
 class TournamentManager:
@@ -487,6 +488,10 @@ class TournamentManager:
                 selected_cards, total_stars = self.select_best_cards_for_tournament(
                     cards, max_stars, min_stars, used_card_ids
                 )
+                total_score = reduce(
+                    lambda x, y: x.get("card_weighted_score", 0) + y, selected_cards
+                )
+
                 # print(selected_cards)
 
                 if len(selected_cards) < 5:
@@ -534,7 +539,7 @@ class TournamentManager:
                         clean_card_info.append(info)
 
                     info_log(
-                        f"Selected cards for {active_tournament_type} tournament deck #{deck_number} (total {total_stars}*): {', '.join(clean_card_info)}"
+                        f"Selected cards for {active_tournament_type} tournament deck #{deck_number} (total stars={total_stars}*; score={total_score}): {', '.join(clean_card_info)}"
                     )
 
                     success = self.register_for_tournament(
