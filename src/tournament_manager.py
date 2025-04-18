@@ -265,7 +265,7 @@ class TournamentManager:
         sorted_cards = sorted(
             sorted_cards,
             key=lambda x: (
-                int(x.get("heroes", {}).get("rarity", 0)),
+                -int(x.get("heroes", {}).get("rarity", 0)),
                 int(x.get("heroes", {}).get("stars", 0)),
             ),
             reverse=True,
