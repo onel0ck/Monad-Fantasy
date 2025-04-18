@@ -489,7 +489,7 @@ class TournamentManager:
                     cards, max_stars, min_stars, used_card_ids
                 )
                 total_score = reduce(
-                    lambda x, y: x.get("card_weighted_score", 0) + y, selected_cards
+                    lambda x, y: x + y.get("card_weighted_score", 0), selected_cards, 0
                 )
 
                 # print(selected_cards)
