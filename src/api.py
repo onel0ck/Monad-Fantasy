@@ -1063,17 +1063,17 @@ class FantasyAPI:
                 "User-Agent": self.user_agent,
             }
 
-            debug_log(f"Getting merkle proof for mint_config_id: {mint_config_id}")
-            response = self.session.get(
-                f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
-                headers=headers,
-                proxies=self.proxies,
-                timeout=10,
-            )
+            max_proof_attempts = 3
+            proof_retry_delay = 2
 
-            if response.status_code == 401 and auth_token == privy_id_token and token:
-                auth_token = token
-                headers["Authorization"] = f"Bearer {auth_token}"
+            for proof_attempt in range(max_proof_attempts):
+                if proof_attempt > 0:
+                    debug_log(
+                        f"Retry {proof_attempt}/{max_proof_attempts-1} for merkle proof"
+                    )
+                    time.sleep(proof_retry_delay)
+
+                debug_log(f"Getting merkle proof for mint_config_id: {mint_config_id}")
                 response = self.session.get(
                     f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
                     headers=headers,
@@ -1081,30 +1081,55 @@ class FantasyAPI:
                     timeout=10,
                 )
 
-            if response.status_code != 200:
-                error_log(f"Failed to get merkle proof: {response.status_code}")
-                try:
-                    debug_log(f"Error response content: {response.text[:200]}")
-                except:
-                    pass
-                return []
+                if (
+                    response.status_code == 401
+                    and auth_token == privy_id_token
+                    and token
+                ):
+                    auth_token = token
+                    headers["Authorization"] = f"Bearer {auth_token}"
+                    response = self.session.get(
+                        f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
+                        headers=headers,
+                        proxies=self.proxies,
+                        timeout=10,
+                    )
 
-            data = response.json()
-            debug_log(f"API response for merkle proof: {data}")
+                if response.status_code != 200:
+                    error_log(f"Failed to get merkle proof: {response.status_code}")
+                    try:
+                        debug_log(f"Error response content: {response.text[:200]}")
+                    except:
+                        pass
 
-            proof = data.get("proof", [])
+                    if proof_attempt < max_proof_attempts - 1:
+                        continue
+                    return []
 
-            if not proof or not isinstance(proof, list) or len(proof) == 0:
-                error_log(
-                    f"Empty or invalid merkle proof received for {mint_config_id}"
+                data = response.json()
+                debug_log(f"API response for merkle proof: {data}")
+
+                proof = data.get("proof", [])
+
+                if not proof or not isinstance(proof, list) or len(proof) == 0:
+                    if proof_attempt < max_proof_attempts - 1:
+                        debug_log(
+                            f"Empty proof received, retrying attempt {proof_attempt+1}/{max_proof_attempts}"
+                        )
+                        continue
+
+                    error_log(
+                        f"Empty or invalid merkle proof received for {mint_config_id}"
+                    )
+                    debug_log(f"Full response: {data}")
+                    return []
+
+                debug_log(
+                    f"Got merkle proof with {len(proof)} elements for {mint_config_id}"
                 )
-                debug_log(f"Full response: {data}")
-                return []
+                return proof
 
-            debug_log(
-                f"Got merkle proof with {len(proof)} elements for {mint_config_id}"
-            )
-            return proof
+            return []
 
         except Exception as e:
             error_log(f"Error getting merkle proof: {str(e)}")
