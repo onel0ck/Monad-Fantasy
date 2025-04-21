@@ -946,44 +946,61 @@ class FantasyAPI:
             }
 
             debug_log(f"Getting merkle proof for mint_config_id: {mint_config_id}")
-            response = self.session.get(
-                f'https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}',
-                headers=headers,
-                proxies=self.proxies,
-                timeout=10
-            )
             
-            if response.status_code == 401 and auth_token == privy_id_token and token:
-                auth_token = token
-                headers['Authorization'] = f'Bearer {auth_token}'
+            max_proof_attempts = 3
+            proof_retry_delay = 2
+            
+            for proof_attempt in range(max_proof_attempts):
+                if proof_attempt > 0:
+                    debug_log(f"Retry {proof_attempt}/{max_proof_attempts-1} for merkle proof")
+                    time.sleep(proof_retry_delay)
+                    
                 response = self.session.get(
                     f'https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}',
                     headers=headers,
                     proxies=self.proxies,
                     timeout=10
                 )
-            
-            if response.status_code != 200:
-                error_log(f"Failed to get merkle proof: {response.status_code}")
-                try:
-                    debug_log(f"Error response content: {response.text[:200]}")
-                except:
-                    pass
-                return []
-            
-            data = response.json()
-            debug_log(f"API response for merkle proof: {data}")
-            
-            proof = data.get('proof', [])
-            
-            if not proof or not isinstance(proof, list) or len(proof) == 0:
-                error_log(f"Empty or invalid merkle proof received for {mint_config_id}")
-                debug_log(f"Full response: {data}")
-                return []
                 
-            debug_log(f"Got merkle proof with {len(proof)} elements for {mint_config_id}")
-            return proof
+                if response.status_code == 401 and auth_token == privy_id_token and token:
+                    auth_token = token
+                    headers['Authorization'] = f'Bearer {auth_token}'
+                    response = self.session.get(
+                        f'https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}',
+                        headers=headers,
+                        proxies=self.proxies,
+                        timeout=10
+                    )
+                
+                if response.status_code != 200:
+                    error_log(f"Failed to get merkle proof: {response.status_code}")
+                    try:
+                        debug_log(f"Error response content: {response.text[:200]}")
+                    except:
+                        pass
+                    if proof_attempt < max_proof_attempts - 1:
+                        continue
+                    return []
+                
+                data = response.json()
+                debug_log(f"API response for merkle proof: {data}")
+                
+                proof = data.get('proof', [])
+                
+                if not proof or not isinstance(proof, list) or len(proof) == 0:
+                    if proof_attempt < max_proof_attempts - 1:
+                        debug_log(f"Empty proof received, retrying attempt {proof_attempt+1}/{max_proof_attempts}")
+                        continue
+                        
+                    error_log(f"Empty or invalid merkle proof received for {mint_config_id}")
+                    debug_log(f"Full response: {data}")
+                    return []
                     
+                debug_log(f"Got merkle proof with {len(proof)} elements for {mint_config_id}")
+                return proof
+                    
+            return []
+                
         except Exception as e:
             error_log(f"Error getting merkle proof: {str(e)}")
             return []
@@ -1004,7 +1021,7 @@ class FantasyAPI:
                     debug_log(f"No fragment packs found for account {account_number}")
                     
                     non_activated_packs = [reward for reward in rewards_data['otherRewards'] 
-                                    if reward.get('type') == 'FRAGMENT_PACK' and not reward.get('is_activated', False)]
+                                        if reward.get('type') == 'FRAGMENT_PACK' and not reward.get('is_activated', False)]
                     
                     if non_activated_packs:
                         debug_log(f"Found {len(non_activated_packs)} non-activated fragment packs")
@@ -1014,6 +1031,18 @@ class FantasyAPI:
                     return False
                     
                 success_log(f"Found {len(fragment_packs)} fragment packs for account {account_number}")
+                
+                def get_config_id(pack):
+                    mint_config_id = pack.get('mint_config_id', '0')
+                    config_parts = mint_config_id.split('_')
+                    if len(config_parts) > 0:
+                        try:
+                            return int(config_parts[0])
+                        except:
+                            return 0
+                    return 0
+                    
+                fragment_packs.sort(key=get_config_id, reverse=True)
                 
                 try:
                     monad_web3 = Web3(Web3.HTTPProvider(self.config['monad_rpc']['url']))
@@ -1052,8 +1081,6 @@ class FantasyAPI:
                                 break
                 except Exception as balance_err:
                     debug_log(f"Error checking initial NFT balance: {str(balance_err)}")
-                
-                fragment_packs.sort(key=lambda x: x.get('mint_config_id', '0'))
                 
                 for pack in fragment_packs:
                     pack_id = pack.get('id')
@@ -1139,6 +1166,8 @@ class FantasyAPI:
                                     info_log(f"NFT balance didn't change after claim: still {balance_after}")
                             except Exception as balance_check_err:
                                 debug_log(f"Error checking balance after claim: {str(balance_check_err)}")
+                                
+                            time.sleep(2)
                         else:
                             info_log(f"Account {account_number}: Failed to claim fragment pack {pack_id} ({pack_name})")
                             
@@ -1163,7 +1192,6 @@ class FantasyAPI:
             error_log(f"Error processing fragment packs for account {account_number}: {str(e)}")
             return False
 
-
     def claim_fragment_pack(self, token, wallet_address, account_number, private_key, pack_id, mint_config_id):
         try:
             debug_log(f"Starting fragment pack claim process for {mint_config_id}, pack_id: {pack_id}")
@@ -1172,26 +1200,29 @@ class FantasyAPI:
             contract_address = monad_web3.to_checksum_address("0x9077d31a794d81c21b0650974d5f581f4000cd1a")
             wallet_address_checksum = monad_web3.to_checksum_address(wallet_address)
             
+            balance = monad_web3.eth.get_balance(wallet_address_checksum)
+            min_required = monad_web3.to_wei(0.01, 'ether')
+            
+            if balance < min_required:
+                error_log(f"Insufficient balance: {monad_web3.from_wei(balance, 'ether')} MONAD for account {account_number}. Minimum required: 0.01 MONAD")
+                return False
+                
             config_parts = mint_config_id.split('_')
             if len(config_parts) == 0:
                 error_log(f"Invalid mint_config_id format: {mint_config_id}")
                 return False
-                
+                    
             mint_config_id_value = int(config_parts[0])
             debug_log(f"Using mint_config_id value: {mint_config_id_value}")
             
             merkle_proof = self._get_merkle_proof(token, mint_config_id)
-            if not merkle_proof:
-                error_log(f"Failed to get merkle proof for {mint_config_id}")
-                return False
-                
             debug_log(f"Got merkle proof with {len(merkle_proof)} elements for {mint_config_id}")
             
             nonce = monad_web3.eth.get_transaction_count(wallet_address_checksum, 'pending')
             
             gas_price = monad_web3.eth.gas_price
-            max_priority_fee = monad_web3.to_wei(1.5, 'gwei')
-            max_fee_per_gas = monad_web3.to_wei(101.5, 'gwei')
+            max_priority_fee = monad_web3.to_wei(2.5, 'gwei')
+            max_fee_per_gas = monad_web3.to_wei(54.5, 'gwei')
             
             method_id = "0x1ff7712f"
             config_id_hex = hex(mint_config_id_value)[2:].zfill(64)
@@ -1209,11 +1240,14 @@ class FantasyAPI:
             
             calldata = f"{method_id}{config_id_hex}{offset_hex}{zero_param}{proof_array}"
             
+            dynamic_gas_limit = 154411 + (len(merkle_proof) * 5000)
+            gas_limit = min(dynamic_gas_limit, 400000)
+            
             transaction = {
                 'nonce': nonce,
                 'to': contract_address,
                 'value': 0,
-                'gas': 144411,
+                'gas': gas_limit,
                 'maxFeePerGas': int(max_fee_per_gas),
                 'maxPriorityFeePerGas': int(max_priority_fee),
                 'data': calldata,
@@ -1222,6 +1256,7 @@ class FantasyAPI:
             }
             
             try:
+                debug_log(f"Sending transaction with gas limit: {gas_limit}, maxFeePerGas: {monad_web3.from_wei(max_fee_per_gas, 'gwei')} gwei")
                 account = monad_web3.eth.account.from_key(private_key)
                 signed_txn = account.sign_transaction(transaction)
                 
@@ -1230,7 +1265,7 @@ class FantasyAPI:
                 debug_log(f"Transaction sent: {tx_hash_hex}")
                 
                 receipt = None
-                for attempt in range(20):
+                for attempt in range(25):
                     try:
                         receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
                         if receipt:
@@ -1262,6 +1297,12 @@ class FantasyAPI:
                     return True
                 else:
                     error_log(f"Transaction failed with status 0")
+                    try:
+                        tx_data = monad_web3.eth.get_transaction(tx_hash)
+                        debug_log(f"Failed transaction details: {tx_data}")
+                        debug_log(f"Transaction failure, gas used: {receipt.get('gasUsed', 'Unknown')}")
+                    except Exception as trace_e:
+                        debug_log(f"Could not get detailed error info: {str(trace_e)}")
                     return False
                     
             except ValueError as ve:
@@ -1277,6 +1318,8 @@ class FantasyAPI:
                             return True
                     except:
                         pass
+                elif "insufficient funds" in str(ve).lower():
+                    error_log(f"Insufficient funds for gas * price + value: {str(ve)}")
                 else:
                     error_log(f"Error sending transaction: {str(ve)}")
                 return False
