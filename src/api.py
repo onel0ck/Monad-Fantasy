@@ -398,7 +398,8 @@ class FantasyAPI:
                 debug_log(f"Requesting application token for account {account_number}")
                 sleep(REQUESTS_DELAY)
                 final_auth_response = self.session.post(
-                    "https://monad.fantasy.top/api/auth/privy",
+                    "https://secret-api.fantasy.top/auth",
+                    # "https://monad.fantasy.top/api/auth/privy",
                     json=final_auth_payload,
                     headers={
                         "Accept": "application/json, text/plain, */*",
@@ -1184,6 +1185,18 @@ class FantasyAPI:
                     f"Found {len(fragment_packs)} fragment packs for account {account_number}"
                 )
 
+                def get_config_id(pack):
+                    mint_config_id = pack.get("mint_config_id", "0")
+                    config_parts = mint_config_id.split("_")
+                    if len(config_parts) > 0:
+                        try:
+                            return int(config_parts[0])
+                        except:
+                            return 0
+                    return 0
+
+                fragment_packs.sort(key=get_config_id, reverse=True)
+
                 try:
                     monad_web3 = Web3(
                         Web3.HTTPProvider(self.config["monad_rpc"]["url"])
@@ -1368,6 +1381,7 @@ class FantasyAPI:
                                 debug_log(
                                     f"Error checking balance after claim: {str(balance_check_err)}"
                                 )
+                            time.sleep(2)
                         else:
                             info_log(
                                 f"Account {account_number}: Failed to claim fragment pack {pack_id} ({pack_name})"
@@ -1421,6 +1435,15 @@ class FantasyAPI:
                 "0x9077d31a794d81c21b0650974d5f581f4000cd1a"
             )
             wallet_address_checksum = monad_web3.to_checksum_address(wallet_address)
+
+            balance = monad_web3.eth.get_balance(wallet_address_checksum)
+            min_required = monad_web3.to_wei(0.01, "ether")
+
+            if balance < min_required:
+                error_log(
+                    f"Insufficient balance: {monad_web3.from_wei(balance, 'ether')} MONAD for account {account_number}. Minimum required: 0.01 MONAD"
+                )
+                return False
 
             config_parts = mint_config_id.split("_")
             if len(config_parts) == 0:
