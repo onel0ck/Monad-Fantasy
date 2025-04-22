@@ -406,7 +406,7 @@ class FantasyAPI:
                         "Content-Type": "application/json",
                         "Origin": "https://monad.fantasy.top",
                         "Referer": "https://monad.fantasy.top/",
-                        "Authorization": f'Bearer {auth_data["token"]}',
+                        "Authorization": f'Bearer {auth_data["identity_token"]}',
                     },
                     proxies=self.proxies,
                     timeout=10,
