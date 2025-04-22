@@ -392,7 +392,7 @@ class FantasyAPI:
                         "privy-id-token", auth_data["identity_token"]
                     )
                     debug_log(f"Set privy-id-token cookie for account {account_number}")
-
+                debug_log(auth_data)
                 final_auth_payload = {"address": wallet_address}
 
                 debug_log(f"Requesting application token for account {account_number}")
