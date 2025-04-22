@@ -412,10 +412,14 @@ class FantasyAPI:
                     timeout=10,
                 )
 
-                if final_auth_response.status_code != 200:
+                if (
+                    final_auth_response.status_code < 200
+                    or final_auth_response.status_code >= 300
+                ):
                     error_log(
                         f"Failed to get application token, status: {final_auth_response.status_code}"
                     )
+                    error_log(final_auth_response.text)
                     if attempt < max_retries - 1:
                         proxy = random.choice(self.all_proxies)
                         self.proxies = {"http": proxy, "https": proxy}
