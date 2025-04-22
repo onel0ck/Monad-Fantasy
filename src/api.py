@@ -398,8 +398,8 @@ class FantasyAPI:
                 debug_log(f"Requesting application token for account {account_number}")
                 sleep(REQUESTS_DELAY)
                 final_auth_response = self.session.post(
-                    "https://secret-api.fantasy.top/auth",
-                    # "https://monad.fantasy.top/api/auth/privy",
+                    # "https://secret-api.fantasy.top/auth",
+                    "https://monad.fantasy.top/api/auth/privy",
                     json=final_auth_payload,
                     headers={
                         "Accept": "application/json, text/plain, */*",
