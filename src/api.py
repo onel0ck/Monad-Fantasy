@@ -398,8 +398,8 @@ class FantasyAPI:
                 debug_log(f"Requesting application token for account {account_number}")
                 sleep(REQUESTS_DELAY)
                 final_auth_response = self.session.post(
-                    # "https://secret-api.fantasy.top/auth",
-                    "https://monad.fantasy.top/api/auth/privy",
+                    "https://secret-api.fantasy.top/auth",
+                    # "https://monad.fantasy.top/api/auth/privy",
                     json=final_auth_payload,
                     headers={
                         "Accept": "application/json, text/plain, */*",
@@ -427,7 +427,8 @@ class FantasyAPI:
                         continue
                     return False
 
-                final_auth_data = final_auth_response.json()
+                final_auth_data = {}  # final_auth_response.json()
+                final_auth_data["token"] = auth_data["identity_token"]
                 cookies_dict = {
                     cookie.name: cookie.value for cookie in self.session.cookies.jar
                 }
@@ -435,7 +436,7 @@ class FantasyAPI:
                 self.account_storage.update_account(
                     wallet_address,
                     private_key,
-                    token=final_auth_data.get("token"),
+                    token=final_auth_data["token"],
                     cookies=cookies_dict,
                 )
 
