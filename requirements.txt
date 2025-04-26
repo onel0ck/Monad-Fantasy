@@ -6,3 +6,4 @@ pytz==2024.1
 PyJWT==2.8.0
 eth_account==0.10.0
 capmonster_python
+curl_cffi
