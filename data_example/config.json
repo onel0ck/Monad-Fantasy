@@ -1,0 +1,151 @@
+{
+    "app": {
+        "threads": 5,
+        "keys_file": "data/keys_and_addresses.txt",
+        "proxy_file": "data/proxys.txt",
+        "success_file": "logs/success_accounts.txt",
+        "failure_file": "logs/failure_accounts.txt",
+        "result_file": "logs/result.txt",
+        "log_file": "logs/app.log",
+        "min_balance": 0.01,
+        "max_balance_checks": 30,
+        "balance_check_delay": 3,
+        "privy_app_id": "cm6ezzy660297zgdk7t3glcz5",
+        "privy_client_id": "client-WY5gEtuoV4UpG2Le3n5pt6QQD61Ztx62VDwtDCZeQc3sN",
+        "privy_ca_id": "c4c1258c-8ddb-4e96-83cd-caacbe1cf8a4"
+    },
+    "rpc": {
+        "url": "wss://ethereum-rpc.publicnode.com"
+    },
+    "monad_rpc": {
+        "url": "https://solitary-shy-tab.monad-testnet.quiknode.pro/7da7ff09b16913dfc6a9d78c9c36554b0c08fe31/"
+    },
+    "tactic": {
+        "enabled": false,
+        "id": "",
+        "max_toggle_attempts": 15,
+        "delay_between_attempts": 2,
+        "old_account": false,
+        "decks": [
+            [7, 6, 5, 3, 2],
+            [7, 6, 5, 3, 2],
+            [6, 6, 5, 4, 2],
+            [7, 6, 5, 3, 2],
+            [7, 6, 6, 2, 2],
+            [6, 6, 5, 4, 2],
+            [6, 5, 5, 5, 2],
+            [6, 6, 5, 3, 3],
+            [7, 6, 4, 3, 3],
+            [6, 5, 5, 3, 3]
+        ]
+    },
+    "capmonster": {
+        "enabled": true,
+        "api_key": "YOUR_KEY"
+    },
+    "2captcha": {
+        "enabled": false,
+        "api_key": "YOUR_KEY"
+    },
+    "quest": {
+        "enabled": false,
+        "ids": [
+            "0",
+            "0"
+        ]
+    },
+    "daily": {
+        "enabled": true
+    },
+    "fragments": {
+        "enabled": false,
+        "id": ""
+    },
+    "fragment_packs": {
+        "enabled": true,
+        "buy_packs": true,
+        "claim_immediately": true,
+        "pack_type": "violet",
+        "specific_quantity": 1,
+        "use_all_fragments": false,
+        "pack_types": {
+            "violet": {
+                "id": "fa42e35e-611e-44de-90e7-819675d523e4",
+                "cost": 100
+            },
+            "emerald": {
+                "id": "786da1fa-1f9e-4dec-a898-a96fbed8d9c3",
+                "cost": 150
+            },
+            "sapphire": {
+                "id": "ac23fd6b-962b-4ad7-aebd-e28a51bf8626",
+                "cost": 650
+            },
+            "lavender": {
+                "id": "28213951-712c-4316-a364-57037c618738",
+                "cost": 3500
+            }
+        }
+    },
+    "onboarding_quest": {
+        "enabled": false,
+        "ids": [
+            "69e67d0a-0a08-4085-889f-58df15bdecb8",
+            "767636d2-2477-4d4a-9308-5c2d43a75e02",
+            "7beb55de-8067-4680-b3ad-ac397b90a55c",
+            "96e6f5f9-e187-4488-b8ee-61c412f7fa4b",
+            "66387328-ff2a-46a9-acb7-846b466934b6",
+            "9c261493-d21f-4c0f-b182-7a8a3c3ccb1f",
+            "2a6ce72f-6352-487c-aa8b-29ba2d150259",
+            "3681ad25-0130-4573-9235-1a658b3af60e",
+            "4122dd9a-dc8f-4fab-970e-6de099673ab4",
+            "535272d6-fbca-44c2-abf3-2c7316dc8f4c",
+            "94484d32-aabf-47d0-a412-c5d0dfefeb44",
+            "94807dbb-24fe-4055-986d-efd6212d28d5",
+            "db5afa98-90fe-4e9c-9034-3fe1cf72683a",
+            "e2f80666-40fe-47a5-804a-35646407312a"
+        ]
+    },
+    "starter_cards": {
+        "enabled": false,
+        "contract_address": "0x9077d31a794d81c21b0650974d5f581f4000cd1a",
+        "onboarding_quest_id": "66387328-ff2a-46a9-acb7-846b466934b6",
+        "wait_time_after_claim": 5
+    },
+    "fragment_roulette": {
+        "enabled": false,
+        "min_fragments": 50
+    },
+    "other_rewards": {
+        "enabled": true,
+        "claim_packs": true
+    },
+    "retry_failed_accounts": true,
+    "info_check": true,
+    "tournaments": {
+        "enabled": false,
+        "claim_rewards": true,
+        "types": {
+            "bronze": {
+                "enabled": false,
+                "id": "735aa837-1505-4887-80e1-6a6387336a6b",
+                "max_stars": 18
+            },
+            "silver": {
+                "enabled": false,
+                "id": "3dc56849-6dfc-46ee-89df-ebb69c595990", 
+                "max_stars": 23
+            },
+            "gold": {
+                "enabled": false,
+                "id": "7a9c9d95-6301-4019-9a23-1289b7c7c05f",
+                "max_stars": 25
+            },
+            "elite": {
+                "enabled": false,
+                "id": "1108865e-ddd8-4ac4-bf5f-6fa8586be323",
+                "max_stars": 999
+            }
+        }
+    }
+}
