@@ -2289,16 +2289,17 @@ class FantasyAPI:
                     else:
                         next_due_time = data.get("nextDueTime")
                         if next_due_time:
-                            next_due_datetime = parser.parse(next_due_time)
-                            moscow_tz = pytz.timezone("Europe/Moscow")
-                            current_time = datetime.now(moscow_tz)
-                            time_difference = next_due_datetime.replace(
-                                tzinfo=pytz.UTC
-                            ) - current_time.replace(tzinfo=moscow_tz)
-                            hours, remainder = divmod(time_difference.seconds, 3600)
-                            minutes, _ = divmod(remainder, 60)
+                            # next_due_datetime = parser.parse(next_due_time)
+                            # moscow_tz = pytz.timezone("Europe/Moscow")
+                            # current_time = datetime.now()
+                            # time_difference = (
+                            #    next_due_datetime.replace(tzinfo=pytz.UTC)
+                            #    - current_time.replace()
+                            # )
+                            # hours, remainder = divmod(time_difference.seconds, 3600)
+                            # minutes, _ = divmod(remainder, 60)
                             success_log(
-                                f"Account {account_number}: {wallet_address}: Next claim available in {hours}h {minutes}m"
+                                f"Account {account_number}: {wallet_address}: Next claim available at {next_due_time}"
                             )
                         return True
 
