@@ -4,7 +4,7 @@ import random
 import requests
 from web3 import Web3
 from eth_account.messages import encode_defunct
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dateutil import parser
 import pytz
 import math
@@ -24,7 +24,6 @@ from .utils import (
 from capmonster_python import TurnstileTask
 import threading
 import time
-import traceback
 import traceback
 
 REQUESTS_DELAY = 2
@@ -2240,6 +2239,46 @@ class FantasyAPI:
         while True:
             try:
                 sleep(REQUESTS_DELAY)
+                check_response = self.session.get(
+                    f"https://secret-api.fantasy.top/quest/daily-quest/{wallet_address}",
+                    headers=headers,
+                    proxies=self.proxies,
+                    timeout=10,
+                )
+                if check_response.status_code != 200:
+                    info_log(f"Check daily claim failed: {check_response.text}")
+                    sleep(retry_delay)
+                    continue
+
+                check_data = check_response.json()
+                can_claim = check_data.get("can_claim", False)
+                if not can_claim:
+                    if "dailyQuestDueTime" in check_data:
+                        due_time = check_data["dailyQuestDueTime"]
+
+                        # Parse the datetime string
+                        dt = datetime.strptime(
+                            due_time, "%Y-%m-%dT%H:%M:%S.%fZ"
+                        ).timestamp()
+
+                        # Get current UTC time
+                        now = time.time()
+
+                        # Get total seconds
+                        total_seconds = int(dt - now)
+
+                        # Convert to hours and minutes
+                        hours = int(total_seconds // 3600)
+                        minutes = int((total_seconds % 3600) // 60)
+
+                        info_log(
+                            f"Next claim available in {hours} hours and {minutes} minutes"
+                        )
+                    else:
+                        info_log("Can't claim yet for some reason (see debug)")
+                        debug_log(check_data)
+                    return True
+
                 response = self.session.post(
                     "https://secret-api.fantasy.top/quest/daily-claim",
                     headers=headers,
