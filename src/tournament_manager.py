@@ -237,7 +237,7 @@ class TournamentManager:
             elif max_stars == 23 and (
                 rarity < 3 or (rares_amount >= 3 and rarity == 3) or (score < 100)
             ):
-                # max 3 rares in silver, score != 0
+                # max 3 rares in silver, score >= 100
                 pass
             elif max_stars == 25 and (
                 rarity < 2
@@ -245,7 +245,7 @@ class TournamentManager:
                 or (epics_amount >= 2 and rarity == 2)
                 or score < 100
             ):
-                # max 4rare, 2epics, score != 0
+                # max 4rare, 2epics, score >= 100 in gold
                 pass
             else:
                 added = True
@@ -296,6 +296,15 @@ class TournamentManager:
             stars_sum = sum(
                 int(item.get("heroes", {}).get("stars", 0)) for item in combo
             )
+            best_rarity = min(
+                int(item.get("heroes", {}).get("rarity", 0)) for item in combo
+            )
+            if max_stars > 26 and best_rarity > 1:
+                continue
+            elif max_stars == 25 and best_rarity > 2:
+                continue
+            elif max_stars == 23 and best_rarity > 3:
+                continue
             if stars_sum <= max_stars:
                 score_sum = sum(
                     int(item.get("card_weighted_score", 0)) for item in combo
