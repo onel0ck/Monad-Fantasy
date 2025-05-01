@@ -1539,7 +1539,7 @@ class FantasyAPI:
                 "nonce": nonce + 1,
                 "to": contract_address,
                 "value": 0,
-                "gas": 144411,
+                "gas": 158256,
                 "maxFeePerGas": int(max_fee_per_gas),
                 "maxPriorityFeePerGas": int(max_priority_fee),
                 "data": calldata,
