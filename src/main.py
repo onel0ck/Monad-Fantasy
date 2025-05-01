@@ -581,6 +581,7 @@ class FantasyProcessor:
                                                 success_log(
                                                     f"Account {account_number}: Successfully claimed tournament rewards: {rewards_str}"
                                                 )
+                                                sleep(6)
                                             elif (
                                                 "status" in claim_result
                                                 and claim_result["status"]
