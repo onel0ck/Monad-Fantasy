@@ -1055,7 +1055,7 @@ class FantasyAPI:
             return True
 
     def _get_merkle_proof(self, token, mint_config_id):
-        for i in range(0, 2):
+        for i in range(0, 1):
             proof = self._get_merkle_proof_inner(token, mint_config_id)
             if not proof:
                 sleep(10)
@@ -1505,10 +1505,35 @@ class FantasyAPI:
                 f"{method_id}{config_id_hex}{offset_hex}{zero_param}{proof_array}"
             )
 
+            debug_log(f"Apporve tx")
+            approve_transaction = {
+                "nonce": nonce,
+                "to": Web3.to_checksum_address(
+                    "0x89e4a70de5F2Ae468B18B6B6300B249387f9Adf0"
+                ),
+                "value": 0,
+                "gas": 46702,
+                "maxFeePerGas": int(max_fee_per_gas),
+                "maxPriorityFeePerGas": int(max_priority_fee),
+                "data": "0x095ea7b3000000000000000000000000f9fe044bdd557c76c8eb0bd566d8b149186425c38000000000000000000000000000000000000000000000000000000000000000",
+                "type": 2,
+                "chainId": 10143,
+            }
+            try:
+                account = monad_web3.eth.account.from_key(private_key)
+                signed_txn = account.sign_transaction(approve_transaction)
+
+                tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                tx_hash_hex = tx_hash.hex()
+                debug_log(f"Approve transaction sent: {tx_hash_hex}")
+                sleep(5)
+            except Exception as e:
+                error_log(e)
+
             debug_log(f"Claim fragment pack tx data: {calldata}")
 
             transaction = {
-                "nonce": nonce,
+                "nonce": nonce + 1,
                 "to": contract_address,
                 "value": 0,
                 "gas": 144411,
