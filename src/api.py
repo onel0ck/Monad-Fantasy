@@ -1505,6 +1505,8 @@ class FantasyAPI:
                 f"{method_id}{config_id_hex}{offset_hex}{zero_param}{proof_array}"
             )
 
+            debug_log(f"Claim fragment pack tx data: {calldata}")
+
             transaction = {
                 "nonce": nonce,
                 "to": contract_address,
