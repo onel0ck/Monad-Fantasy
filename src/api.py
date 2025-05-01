@@ -1547,6 +1547,7 @@ class FantasyAPI:
             }
 
             transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
+            info_log(f"Tx gas: {transaction['gas']}")
 
             try:
                 account = monad_web3.eth.account.from_key(private_key)
