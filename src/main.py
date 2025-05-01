@@ -480,49 +480,6 @@ class FantasyProcessor:
                         if not fragment_success:
                             tasks_completed = False
 
-                    if self.config.get("fragment_roulette", {}).get("enabled", False):
-                        rate_limit = False
-                        while True:
-                            claim_packs = self.config.get("other_rewards", {}).get(
-                                "claim_packs", False
-                            )
-                            fragment_roulette_result = api.fragment_roulette(
-                                token,
-                                wallet_address,
-                                account_number,
-                                private_key if claim_packs else None,
-                            )
-                            if (
-                                isinstance(fragment_roulette_result, str)
-                                and "429" in fragment_roulette_result
-                            ):
-                                info_log(
-                                    f"Rate limit on fragment roulette for account {account_number}, retrying..."
-                                )
-                                sleep(2)
-                                rate_limit = True
-                                break
-                            if (
-                                fragment_roulette_result
-                                and fragment_roulette_result.get("success", False)
-                            ):
-                                prize = fragment_roulette_result.get(
-                                    "selectedPrize", {}
-                                )
-                                prize_type = prize.get("type", "Unknown")
-                                prize_amount = prize.get("text", "Unknown")
-                                success_log(
-                                    f"Account {account_number}: Fragment roulette success - {prize_type}({prize_amount})"
-                                )
-                                sleep(2)
-                            else:
-                                info_log(
-                                    f"Account {account_number}: Fragment roulette skipped (not enough fragments or already claimed)"
-                                )
-                                break
-                        if rate_limit:
-                            continue
-
                     if self.config["quest"]["enabled"]:
                         for quest_id in self.config["quest"]["ids"]:
                             quest_key = f"{account_number}:{quest_id}"
@@ -698,6 +655,49 @@ class FantasyProcessor:
                             success_log(
                                 f"Account {account_number}: Successfully processed other rewards"
                             )
+
+                    if self.config.get("fragment_roulette", {}).get("enabled", False):
+                        rate_limit = False
+                        while True:
+                            claim_packs = self.config.get("other_rewards", {}).get(
+                                "claim_packs", False
+                            )
+                            fragment_roulette_result = api.fragment_roulette(
+                                token,
+                                wallet_address,
+                                account_number,
+                                private_key if claim_packs else None,
+                            )
+                            if (
+                                isinstance(fragment_roulette_result, str)
+                                and "429" in fragment_roulette_result
+                            ):
+                                info_log(
+                                    f"Rate limit on fragment roulette for account {account_number}, retrying..."
+                                )
+                                sleep(2)
+                                rate_limit = True
+                                break
+                            if (
+                                fragment_roulette_result
+                                and fragment_roulette_result.get("success", False)
+                            ):
+                                prize = fragment_roulette_result.get(
+                                    "selectedPrize", {}
+                                )
+                                prize_type = prize.get("type", "Unknown")
+                                prize_amount = prize.get("text", "Unknown")
+                                success_log(
+                                    f"Account {account_number}: Fragment roulette success - {prize_type}({prize_amount})"
+                                )
+                                sleep(2)
+                            else:
+                                info_log(
+                                    f"Account {account_number}: Fragment roulette skipped (not enough fragments or already claimed)"
+                                )
+                                break
+                        if rate_limit:
+                            continue
 
                     if self.config["info_check"]:
                         info_success = api.info(token, wallet_address, account_number)
