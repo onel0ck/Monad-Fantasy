@@ -1055,6 +1055,15 @@ class FantasyAPI:
             return True
 
     def _get_merkle_proof(self, token, mint_config_id):
+        for i in range(0, 4):
+            proof = self._get_merkle_proof_inner(token, mint_config_id)
+            if not proof:
+                sleep(10)
+            else:
+                return proof
+        return []
+
+    def _get_merkle_proof_inner(self, token, mint_config_id):
         try:
             privy_id_token = self._get_privy_token_id()
 
@@ -1083,7 +1092,7 @@ class FantasyAPI:
                     f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
                     headers=headers,
                     proxies=self.proxies,
-                    timeout=10,
+                    timeout=20,
                 )
 
                 if (
@@ -1097,7 +1106,7 @@ class FantasyAPI:
                         f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
                         headers=headers,
                         proxies=self.proxies,
-                        timeout=10,
+                        timeout=20,
                     )
 
                 if response.status_code != 200:

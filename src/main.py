@@ -690,7 +690,7 @@ class FantasyProcessor:
                                 success_log(
                                     f"Account {account_number}: Fragment roulette success - {prize_type}({prize_amount})"
                                 )
-                                sleep(10)
+                                sleep(2)
                             else:
                                 info_log(
                                     f"Account {account_number}: Fragment roulette skipped (not enough fragments or already claimed)"
