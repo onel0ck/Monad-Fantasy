@@ -1539,13 +1539,14 @@ class FantasyAPI:
                 "nonce": nonce,
                 "to": contract_address,
                 "value": 0,
-                "gas": 158256,
                 "maxFeePerGas": int(max_fee_per_gas),
                 "maxPriorityFeePerGas": int(max_priority_fee),
                 "data": calldata,
                 "type": 2,
                 "chainId": 10143,
             }
+
+            transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
 
             try:
                 account = monad_web3.eth.account.from_key(private_key)
