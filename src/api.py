@@ -1536,7 +1536,7 @@ class FantasyAPI:
             debug_log(f"Claim fragment pack tx data: {calldata}")
 
             transaction = {
-                "nonce": nonce + 1,
+                "nonce": nonce,
                 "to": contract_address,
                 "value": 0,
                 "gas": 158256,
