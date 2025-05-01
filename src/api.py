@@ -2691,6 +2691,7 @@ class FantasyAPI:
                                     success_log(
                                         f"Account {account_number}: Claimed tournament rewards: {rewards_str}"
                                     )
+                                    sleep(5)
 
                 has_pending_packs = False
                 pending_packs_data = ""
