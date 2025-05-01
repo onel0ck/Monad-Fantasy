@@ -1055,7 +1055,7 @@ class FantasyAPI:
             return True
 
     def _get_merkle_proof(self, token, mint_config_id):
-        for i in range(0, 4):
+        for i in range(0, 2):
             proof = self._get_merkle_proof_inner(token, mint_config_id)
             if not proof:
                 sleep(10)
@@ -1467,9 +1467,9 @@ class FantasyAPI:
             debug_log(f"Using mint_config_id value: {mint_config_id_value}")
 
             merkle_proof = self._get_merkle_proof(token, mint_config_id)
-            if not merkle_proof:
-                error_log(f"Failed to get merkle proof for {mint_config_id}")
-                return False
+            # if not merkle_proof:
+            #    error_log(f"Failed to get merkle proof for {mint_config_id}")
+            #    return False
 
             debug_log(
                 f"Got merkle proof with {len(merkle_proof)} elements for {mint_config_id}"
