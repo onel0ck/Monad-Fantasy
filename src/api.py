@@ -1847,7 +1847,7 @@ class FantasyAPI:
                 if "players_by_pk" in data:
                     player_data = data["players_by_pk"]
                     fragments = int(player_data.get("fragments", 0))
-
+                    info_log(f"Roullete: current fragments amount = {fragments}")
                     if fragments < self.config["fragment_roulette"]["min_fragments"]:
                         info_log(
                             f"Account {account_number} has {fragments} fragments, need {self.config['fragment_roulette']['min_fragments']} for roulette. Skipping."
@@ -1912,6 +1912,7 @@ class FantasyAPI:
                 )
 
             if response.status_code not in [200, 201]:
+                info_log(response.text)
                 if response.status_code == 400:
                     info_log(
                         f"Account {account_number} doesn't have enough fragments for roulette"
@@ -1919,6 +1920,7 @@ class FantasyAPI:
                     return False
 
                 error_log(f"Failed to spin fragment roulette: {response.status_code}")
+
                 return False
 
             data = response.json()
