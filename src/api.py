@@ -1112,7 +1112,7 @@ class FantasyAPI:
                 if response.status_code != 200:
                     error_log(f"Failed to get merkle proof: {response.status_code}")
                     try:
-                        debug_log(f"Error response content: {response.text[:200]}")
+                        debug_log(f"Error response content: {response.text}")
                     except:
                         pass
 
