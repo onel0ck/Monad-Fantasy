@@ -1541,13 +1541,14 @@ class FantasyAPI:
                 "value": 0,
                 "maxFeePerGas": int(max_fee_per_gas),
                 "maxPriorityFeePerGas": int(max_priority_fee),
+                "gas": 158256,
                 "data": calldata,
                 "type": 2,
                 "chainId": 10143,
             }
 
-            transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
-            info_log(f"Tx gas: {transaction['gas']}")
+            # transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
+            debug_log(f"Tx gas: {transaction['gas']}")
 
             try:
                 account = monad_web3.eth.account.from_key(private_key)
