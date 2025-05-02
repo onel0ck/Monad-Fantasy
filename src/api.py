@@ -1547,8 +1547,11 @@ class FantasyAPI:
                 "chainId": 10143,
             }
 
-            # transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
-            debug_log(f"Tx gas: {transaction['gas']}")
+            try:
+                transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
+                debug_log(f"Tx gas: {transaction['gas']}")
+            except:
+                debug_log("Gas estimation failed")
 
             try:
                 account = monad_web3.eth.account.from_key(private_key)
