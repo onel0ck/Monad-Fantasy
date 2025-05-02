@@ -1537,11 +1537,12 @@ class FantasyAPI:
 
             transaction = {
                 "nonce": nonce,
+                "from": Web3.to_checksum_address(wallet_address),
                 "to": contract_address,
                 "value": 0,
                 "maxFeePerGas": int(max_fee_per_gas),
                 "maxPriorityFeePerGas": int(max_priority_fee),
-                "gas": 158256,
+                "gas": 150256 + random.randint(1000, 30000),
                 "data": calldata,
                 "type": 2,
                 "chainId": 10143,
