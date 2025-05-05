@@ -596,7 +596,7 @@ class FantasyAPI:
                     timeout=10,
                 )
 
-            tournament_number = 3
+            tournament_number = 10
 
             if rewards_response.status_code == 200:
                 rewards_data = rewards_response.json()
