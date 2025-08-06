@@ -4,7 +4,7 @@ import random
 import requests
 from web3 import Web3
 from eth_account.messages import encode_defunct
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from dateutil import parser
 import pytz
 import math
@@ -24,6 +24,7 @@ from .utils import (
 from capmonster_python import TurnstileTask
 import threading
 import time
+import traceback
 import traceback
 
 REQUESTS_DELAY = 2
@@ -596,7 +597,7 @@ class FantasyAPI:
                     timeout=10,
                 )
 
-            tournament_number = 10
+            tournament_number = 3
 
             if rewards_response.status_code == 200:
                 rewards_data = rewards_response.json()
@@ -1055,15 +1056,6 @@ class FantasyAPI:
             return True
 
     def _get_merkle_proof(self, token, mint_config_id):
-        for i in range(0, 1):
-            proof = self._get_merkle_proof_inner(token, mint_config_id)
-            if not proof:
-                sleep(10)
-            else:
-                return proof
-        return []
-
-    def _get_merkle_proof_inner(self, token, mint_config_id):
         try:
             privy_id_token = self._get_privy_token_id()
 
@@ -1092,7 +1084,7 @@ class FantasyAPI:
                     f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
                     headers=headers,
                     proxies=self.proxies,
-                    timeout=20,
+                    timeout=10,
                 )
 
                 if (
@@ -1106,13 +1098,13 @@ class FantasyAPI:
                         f"https://secret-api.fantasy.top/card/get-merkle-proof/{mint_config_id}",
                         headers=headers,
                         proxies=self.proxies,
-                        timeout=20,
+                        timeout=10,
                     )
 
                 if response.status_code != 200:
                     error_log(f"Failed to get merkle proof: {response.status_code}")
                     try:
-                        debug_log(f"Error response content: {response.text}")
+                        debug_log(f"Error response content: {response.text[:200]}")
                     except:
                         pass
 
@@ -1467,9 +1459,9 @@ class FantasyAPI:
             debug_log(f"Using mint_config_id value: {mint_config_id_value}")
 
             merkle_proof = self._get_merkle_proof(token, mint_config_id)
-            # if not merkle_proof:
-            #    error_log(f"Failed to get merkle proof for {mint_config_id}")
-            #    return False
+            if not merkle_proof:
+                error_log(f"Failed to get merkle proof for {mint_config_id}")
+                return False
 
             debug_log(
                 f"Got merkle proof with {len(merkle_proof)} elements for {mint_config_id}"
@@ -1505,54 +1497,17 @@ class FantasyAPI:
                 f"{method_id}{config_id_hex}{offset_hex}{zero_param}{proof_array}"
             )
 
-            def unused():
-                debug_log(f"Apporve tx")
-                approve_transaction = {
-                    "nonce": nonce,
-                    "to": Web3.to_checksum_address(
-                        "0x89e4a70de5F2Ae468B18B6B6300B249387f9Adf0"
-                    ),
-                    "value": 0,
-                    "gas": 46702,
-                    "maxFeePerGas": int(max_fee_per_gas),
-                    "maxPriorityFeePerGas": int(max_priority_fee),
-                    "data": "0x095ea7b3000000000000000000000000f9fe044bdd557c76c8eb0bd566d8b149186425c38000000000000000000000000000000000000000000000000000000000000000",
-                    "type": 2,
-                    "chainId": 10143,
-                }
-                try:
-                    account = monad_web3.eth.account.from_key(private_key)
-                    signed_txn = account.sign_transaction(approve_transaction)
-
-                    tx_hash = monad_web3.eth.send_raw_transaction(
-                        signed_txn.rawTransaction
-                    )
-                    tx_hash_hex = tx_hash.hex()
-                    debug_log(f"Approve transaction sent: {tx_hash_hex}")
-                    sleep(5)
-                except Exception as e:
-                    error_log(e)
-
-            debug_log(f"Claim fragment pack tx data: {calldata}")
-
             transaction = {
                 "nonce": nonce,
-                "from": Web3.to_checksum_address(wallet_address),
                 "to": contract_address,
                 "value": 0,
+                "gas": 144411,
                 "maxFeePerGas": int(max_fee_per_gas),
                 "maxPriorityFeePerGas": int(max_priority_fee),
-                "gas": 150256 + random.randint(1000, 30000),
                 "data": calldata,
                 "type": 2,
                 "chainId": 10143,
             }
-
-            try:
-                transaction["gas"] = monad_web3.eth.estimate_gas(transaction)
-                debug_log(f"Tx gas: {transaction['gas']}")
-            except:
-                debug_log("Gas estimation failed")
 
             try:
                 account = monad_web3.eth.account.from_key(private_key)
@@ -1893,7 +1848,7 @@ class FantasyAPI:
                 if "players_by_pk" in data:
                     player_data = data["players_by_pk"]
                     fragments = int(player_data.get("fragments", 0))
-                    info_log(f"Roullete: current fragments amount = {fragments}")
+
                     if fragments < self.config["fragment_roulette"]["min_fragments"]:
                         info_log(
                             f"Account {account_number} has {fragments} fragments, need {self.config['fragment_roulette']['min_fragments']} for roulette. Skipping."
@@ -1958,7 +1913,6 @@ class FantasyAPI:
                 )
 
             if response.status_code not in [200, 201]:
-                info_log(response.text)
                 if response.status_code == 400:
                     info_log(
                         f"Account {account_number} doesn't have enough fragments for roulette"
@@ -1966,7 +1920,6 @@ class FantasyAPI:
                     return False
 
                 error_log(f"Failed to spin fragment roulette: {response.status_code}")
-
                 return False
 
             data = response.json()
@@ -2191,6 +2144,217 @@ class FantasyAPI:
             )
             return 0
 
+    def get_player_cards_for_burn(self, token, wallet_address, account_number):
+        try:
+            privy_id_token = self._get_privy_token_id()
+            auth_token = privy_id_token if privy_id_token else token
+
+            headers = {
+                "Accept": "application/json, text/plain, */*",
+                "Authorization": f"Bearer {auth_token}",
+                "Origin": "https://monad.fantasy.top",
+                "Referer": "https://monad.fantasy.top/",
+                "User-Agent": self.user_agent,
+                "sec-ch-ua": get_sec_ch_ua(self.user_agent),
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": get_platform(self.user_agent),
+            }
+
+            all_cards = []
+            page = 1
+            
+            while True:
+                params = {
+                    "pagination.page": page,
+                    "pagination.limit": 100,
+                    "orderBy": "cards_score_asc",
+                    "where.rarity.in": [1, 2, 3, 4],
+                    "where.is_in_deck": "false",
+                    "groupCard": "true",
+                    "isGalleryView": "false"
+                }
+
+                response = self.session.get(
+                    f"https://secret-api.fantasy.top/card/player-all-cards/{wallet_address}",
+                    headers=headers,
+                    params=params,
+                    proxies=self.proxies,
+                    timeout=15,
+                )
+
+                if response.status_code == 401 and auth_token == privy_id_token and token:
+                    auth_token = token
+                    headers["Authorization"] = f"Bearer {auth_token}"
+                    continue
+
+                if response.status_code != 200:
+                    error_log(f"Failed to fetch cards for burn: {response.status_code}")
+                    return []
+
+                data = response.json()
+                if not data.get("data"):
+                    break
+
+                for card in data.get("data", []):
+                    if not card.get("is_in_deck", False):
+                        card_info = {
+                            "id": card.get("id"),
+                            "token_id": card.get("token_id"),
+                            "hero_id": card.get("hero_id"),
+                            "name": card.get("name", card.get("heroes", {}).get("name", "Unknown")),
+                            "stars": int(card.get("stars", card.get("heroes", {}).get("stars", 0))),
+                            "rarity": int(card.get("rarity", card.get("heroes", {}).get("rarity", 0))),
+                            "card_weighted_score": int(card.get("card_weighted_score", 0)),
+                            "card_number": int(card.get("card_number", 1)),
+                            "in_deck_number": int(card.get("in_deck_number", 0))
+                        }
+                        all_cards.append(card_info)
+
+                meta = data.get("meta", {})
+                if meta.get("currentPage", 0) >= meta.get("lastPage", 0):
+                    break
+                page += 1
+
+            return all_cards
+
+        except Exception as e:
+            error_log(f"Error fetching cards for burn: {str(e)}")
+            return []
+
+    def select_cards_to_burn(self, cards, min_cards, max_cards, min_stars, max_stars, burn_duplicates):
+        try:
+            cards_to_burn = []
+            
+            eligible_cards = [
+                card for card in cards 
+                if min_stars <= card["stars"] <= max_stars
+            ]
+            
+            if not eligible_cards:
+                info_log("No cards found within the specified star range")
+                return []
+
+            if burn_duplicates:
+                card_groups = {}
+                for card in eligible_cards:
+                    hero_id = card["hero_id"]
+                    if hero_id not in card_groups:
+                        card_groups[hero_id] = []
+                    card_groups[hero_id].append(card)
+                
+                for hero_id, group in card_groups.items():
+                    if len(group) > 1:
+                        sorted_group = sorted(group, key=lambda x: x["card_weighted_score"], reverse=True)
+                        cards_to_burn.extend(sorted_group[1:])
+                        
+                        if len(cards_to_burn) >= max_cards:
+                            break
+            
+            if len(cards_to_burn) < min_cards:
+                remaining_eligible = [
+                    card for card in eligible_cards 
+                    if card not in cards_to_burn
+                ]
+                sorted_remaining = sorted(
+                    remaining_eligible, 
+                    key=lambda x: (x["stars"], x["card_weighted_score"])
+                )
+                
+                needed_cards = min_cards - len(cards_to_burn)
+                cards_to_burn.extend(sorted_remaining[:needed_cards])
+            
+            cards_to_burn = cards_to_burn[:max_cards]
+            
+            return cards_to_burn
+
+        except Exception as e:
+            error_log(f"Error selecting cards to burn: {str(e)}")
+            return []
+
+    def burn_cards(self, token, wallet_address, account_number, private_key, card_token_ids):
+        try:
+            if not card_token_ids:
+                info_log(f"No cards to burn for account {account_number}")
+                return False
+
+            monad_web3 = Web3(Web3.HTTPProvider(self.config["monad_rpc"]["url"]))
+            contract_address = monad_web3.to_checksum_address(
+                self.config["burn_cards"]["contract_address"]
+            )
+            wallet_address_checksum = monad_web3.to_checksum_address(wallet_address)
+
+            # Check balance
+            balance = monad_web3.eth.get_balance(wallet_address_checksum)
+            min_required = monad_web3.to_wei(0.01, "ether")
+            
+            if balance < min_required:
+                error_log(f"Insufficient balance for burn transaction: {monad_web3.from_wei(balance, 'ether')} MONAD")
+                return False
+
+            nonce = monad_web3.eth.get_transaction_count(wallet_address_checksum, "pending")
+
+            method_id = "0x7bad2380"
+            
+            erc721_address = "0x04edb399cc24a95672bf9b880ee550de0b2d0b1e"
+            erc721_padded = "000000000000000000000000" + erc721_address[2:].lower()
+            
+            array_offset = "0000000000000000000000000000000000000000000000000000000000000040"
+            
+            array_length = hex(len(card_token_ids))[2:].zfill(64)
+            
+            token_ids_data = ""
+            for token_id in card_token_ids:
+                token_id_hex = hex(int(token_id))[2:].zfill(64)
+                token_ids_data += token_id_hex
+            
+            calldata = method_id + erc721_padded + array_offset + array_length + token_ids_data
+
+            gas_limit = 100000 + (20000 * len(card_token_ids))
+            
+            gas_price = monad_web3.eth.gas_price
+            max_priority_fee = monad_web3.to_wei(1.5, "gwei")
+            max_fee_per_gas = gas_price * 2
+
+            transaction = {
+                "nonce": nonce,
+                "to": contract_address,
+                "value": 0,
+                "gas": gas_limit,
+                "maxFeePerGas": max_fee_per_gas,
+                "maxPriorityFeePerGas": max_priority_fee,
+                "data": calldata,
+                "type": 2,
+                "chainId": 10143,
+            }
+
+            account = monad_web3.eth.account.from_key(private_key)
+            signed_txn = account.sign_transaction(transaction)
+            tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            tx_hash_hex = tx_hash.hex()
+            
+            info_log(f"Burn transaction sent for account {account_number}: {tx_hash_hex}")
+
+            receipt = None
+            for attempt in range(20):
+                try:
+                    receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
+                    if receipt:
+                        break
+                except Exception:
+                    pass
+                sleep(3)
+
+            if receipt and receipt["status"] == 1:
+                success_log(f"Successfully burned {len(card_token_ids)} cards for account {account_number}")
+                return True
+            else:
+                error_log(f"Burn transaction failed for account {account_number}")
+                return False
+
+        except Exception as e:
+            error_log(f"Error burning cards for account {account_number}: {str(e)}")
+            return False
+
     def _update_fragments_count(self, wallet_address, new_count):
         try:
             result_file = self.config["app"]["result_file"]
@@ -2287,46 +2451,6 @@ class FantasyAPI:
         while True:
             try:
                 sleep(REQUESTS_DELAY)
-                check_response = self.session.get(
-                    f"https://secret-api.fantasy.top/quest/daily-quest/{wallet_address}",
-                    headers=headers,
-                    proxies=self.proxies,
-                    timeout=10,
-                )
-                if check_response.status_code != 200:
-                    info_log(f"Check daily claim failed: {check_response.text}")
-                    sleep(retry_delay)
-                    continue
-
-                check_data = check_response.json()
-                can_claim = check_data.get("can_claim", False)
-                if not can_claim:
-                    if "dailyQuestDueTime" in check_data:
-                        due_time = check_data["dailyQuestDueTime"]
-
-                        # Parse the datetime string
-                        dt = datetime.strptime(
-                            due_time, "%Y-%m-%dT%H:%M:%S.%fZ"
-                        ).timestamp()
-
-                        # Get current UTC time
-                        now = time.time()
-
-                        # Get total seconds
-                        total_seconds = int(dt - now)
-
-                        # Convert to hours and minutes
-                        hours = int(total_seconds // 3600)
-                        minutes = int((total_seconds % 3600) // 60)
-
-                        info_log(
-                            f"Next claim available in {hours} hours and {minutes} minutes"
-                        )
-                    else:
-                        info_log("Can't claim yet for some reason (see debug)")
-                        debug_log(check_data)
-                    return True
-
                 response = self.session.post(
                     "https://secret-api.fantasy.top/quest/daily-claim",
                     headers=headers,
@@ -2376,17 +2500,16 @@ class FantasyAPI:
                     else:
                         next_due_time = data.get("nextDueTime")
                         if next_due_time:
-                            # next_due_datetime = parser.parse(next_due_time)
-                            # moscow_tz = pytz.timezone("Europe/Moscow")
-                            # current_time = datetime.now()
-                            # time_difference = (
-                            #    next_due_datetime.replace(tzinfo=pytz.UTC)
-                            #    - current_time.replace()
-                            # )
-                            # hours, remainder = divmod(time_difference.seconds, 3600)
-                            # minutes, _ = divmod(remainder, 60)
+                            next_due_datetime = parser.parse(next_due_time)
+                            moscow_tz = pytz.timezone("Europe/Moscow")
+                            current_time = datetime.now(moscow_tz)
+                            time_difference = next_due_datetime.replace(
+                                tzinfo=pytz.UTC
+                            ) - current_time.replace(tzinfo=moscow_tz)
+                            hours, remainder = divmod(time_difference.seconds, 3600)
+                            minutes, _ = divmod(remainder, 60)
                             success_log(
-                                f"Account {account_number}: {wallet_address}: Next claim available at {next_due_time}"
+                                f"Account {account_number}: {wallet_address}: Next claim available in {hours}h {minutes}m"
                             )
                         return True
 
@@ -2737,7 +2860,6 @@ class FantasyAPI:
                                     success_log(
                                         f"Account {account_number}: Claimed tournament rewards: {rewards_str}"
                                     )
-                                    sleep(5)
 
                 has_pending_packs = False
                 pending_packs_data = ""
@@ -3416,121 +3538,3 @@ class FantasyAPI:
                 f"Error claiming starter cards for account {account_number}: {str(e)}"
             )
             return False
-
-    def burn_cards(
-        self, token: str, wallet_address: str, account_number: int, private_key: str
-    ):
-        privy_id_token = self._get_privy_token_id()
-
-        auth_token = privy_id_token if privy_id_token else token
-
-        headers = {
-            "Accept": "application/json, text/plain, */*",
-            "Authorization": f"Bearer {auth_token}",
-            "Origin": "https://monad.fantasy.top",
-            "Referer": "https://monad.fantasy.top/",
-            "Content-Length": "0",
-            "User-Agent": self.user_agent,
-            "Priority": "u=1, i",
-            "Sec-Ch-Ua": get_sec_ch_ua(self.user_agent),
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": get_platform(self.user_agent),
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-site",
-        }
-        sleep(REQUESTS_DELAY)
-        response = self.session.get(
-            f"https://secret-api.fantasy.top/card/player-all-cards/{wallet_address}?pagination.page=1&pagination.limit=50&orderBy=cards_score_asc&where.rarity.in=4&where.is_in_deck=false",
-            headers=headers,
-            proxies=self.proxies,
-            timeout=15,
-        )
-
-        if response.status_code != 200:
-            error_log(response.text)
-            return False
-        cards = response.json()["data"]
-
-        def get_score(card):
-            try:
-                return int(card.get("expected_score", 999))
-            except (ValueError, TypeError):
-                return 999
-
-        sorted_cards = sorted(cards, key=get_score, reverse=True)
-        min_card = sorted_cards[0]
-        info_log(
-            f'Min score: {min_card.get("expected_score", -1)} token_id: {min_card.get("token_id", "")}',
-        )
-        if float(min_card.get("expected_score", -1)) > 200:
-            info_log("Min card score is too high, skip burning")
-            return False
-        token_id = int(min_card.get("token_id", ""))
-        contract_method_data = "0x7bad238000000000000000000000000004edb399cc24a95672bf9b880ee550de0b2d0b1e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001" + hex(
-            token_id
-        )[2:].zfill(
-            64
-        )
-
-        monad_web3 = Web3(Web3.HTTPProvider(self.config["monad_rpc"]["url"]))
-
-        contract_address = "0x9077D31A794D81c21b0650974d5F581F4000CD1a"
-
-        nonce_response = monad_web3.eth.get_transaction_count(
-            wallet_address, "pending"
-        )
-
-        gas_price = monad_web3.eth.gas_price
-        max_priority_fee = monad_web3.to_wei(1.5, "gwei")
-        max_fee_per_gas = gas_price * 2
-
-        transaction = {
-            "nonce": nonce_response,
-            "to": monad_web3.to_checksum_address(contract_address),
-            "value": 0,
-            "gas": 80000,
-            "maxFeePerGas": max_fee_per_gas,
-            "maxPriorityFeePerGas": max_priority_fee,
-            "data": contract_method_data,
-            "type": 2,
-            "chainId": 10143,
-        }
-
-        private_key = self.account_storage.get_account_data(wallet_address)[
-            "private_key"
-        ]
-
-        try:
-            account = monad_web3.eth.account.from_key(private_key)
-            signed_txn = account.sign_transaction(transaction)
-            tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-            tx_hash_hex = tx_hash.hex()
-            debug_log(f"Transaction sent: {tx_hash_hex}")
-
-            receipt = None
-            retries = 10
-            while retries > 0 and receipt is None:
-                try:
-                    receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
-                except Exception:
-                    sleep(2)
-                    retries -= 1
-
-            if receipt and receipt["status"] == 1:
-                success_log(
-                    f"Transaction confirmed for account {account_number}: {tx_hash_hex}"
-                )
-            else:
-                error_log(
-                    f"Transaction failed or timed out for account {account_number}"
-                )
-                return False
-        except Exception as e:
-            error_log(
-                f"Error signing or sending transaction for account {account_number}: {str(e)}"
-            )
-            return False
-
-        sleep(2)
-        return True 
