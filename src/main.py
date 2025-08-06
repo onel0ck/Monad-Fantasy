@@ -689,17 +689,6 @@ class FantasyProcessor:
                                 f"Account {account_number}: Successfully processed other rewards"
                             )
 
-                    if self.config["info_check"]:
-                        info_success = api.info(token, wallet_address, account_number)
-                        if isinstance(info_success, str) and "429" in info_success:
-                            info_log(
-                                f"Rate limit on info check for account {account_number}, retrying..."
-                            )
-                            sleep(2)
-                            continue
-                        if not info_success:
-                            tasks_completed = False
-
                     if self.config.get("tournaments", {}).get("enabled", False):
                         from src.tournament_manager import TournamentManager
 
@@ -744,6 +733,65 @@ class FantasyProcessor:
                                 info_log(
                                     f"Account {account_number}: Failed to register in {', '.join(failed_tournaments)} tournaments"
                                 )
+
+                    # Burn cards functionality
+                    if self.config.get("burn_cards", {}).get("enabled", False):
+                        try:
+                            # Fetch all player cards
+                            all_cards = api.get_player_cards_for_burn(
+                                token, wallet_address, account_number
+                            )
+                            
+                            if all_cards:
+                                info_log(f"Found {len(all_cards)} cards for account {account_number}")
+                                
+                                # Select cards to burn based on configuration
+                                cards_to_burn = api.select_cards_to_burn(
+                                    all_cards,
+                                    self.config["burn_cards"]["min_cards_to_burn"],
+                                    self.config["burn_cards"]["max_cards_to_burn"],
+                                    self.config["burn_cards"]["min_stars_threshold"],
+                                    self.config["burn_cards"]["max_stars_threshold"],
+                                    self.config["burn_cards"]["burn_duplicates"]
+                                )
+                                
+                                if cards_to_burn:
+                                    # Log cards to be burned
+                                    burn_info = []
+                                    for card in cards_to_burn:
+                                        burn_info.append(f"{card['name']} ({card['stars']}* ID:{card['token_id']})")
+                                    info_log(f"Account {account_number}: Burning {len(cards_to_burn)} cards: {', '.join(burn_info[:5])}{'...' if len(burn_info) > 5 else ''}")
+                                    
+                                    # Extract token IDs
+                                    token_ids_to_burn = [card["token_id"] for card in cards_to_burn]
+                                    
+                                    # Execute burn transaction
+                                    burn_result = api.burn_cards(
+                                        token, wallet_address, account_number, private_key, token_ids_to_burn
+                                    )
+                                    
+                                    if burn_result:
+                                        success_log(f"Account {account_number}: Successfully burned {len(cards_to_burn)} cards")
+                                    else:
+                                        error_log(f"Account {account_number}: Failed to burn cards")
+                                else:
+                                    info_log(f"Account {account_number}: No cards selected for burning based on criteria")
+                            else:
+                                info_log(f"Account {account_number}: No cards available for burning")
+                                
+                        except Exception as e:
+                            error_log(f"Error in burn cards process for account {account_number}: {str(e)}")
+
+                    if self.config["info_check"]:
+                        info_success = api.info(token, wallet_address, account_number)
+                        if isinstance(info_success, str) and "429" in info_success:
+                            info_log(
+                                f"Rate limit on info check for account {account_number}, retrying..."
+                            )
+                            sleep(2)
+                            continue
+                        if not info_success:
+                            tasks_completed = False
 
                     if tasks_completed:
                         self._write_success(private_key, wallet_address)
