@@ -120,6 +120,15 @@
         "enabled": true,
         "claim_packs": true
     },
+    "burn_cards": {
+        "enabled": true,
+        "burn_duplicates": true,
+        "min_cards_to_burn": 1,
+        "max_cards_to_burn": 3,
+        "min_stars_threshold": 1,
+        "max_stars_threshold": 5,
+        "contract_address": "0x9077d31a794d81c21b0650974d5f581f4000cd1a"
+    },
     "retry_failed_accounts": true,
     "info_check": true,
     "tournaments": {
@@ -148,4 +157,5 @@
             }
         }
     }
+
 }
