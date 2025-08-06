@@ -7,7 +7,7 @@ from time import sleep
 
 init(autoreset=True)
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 def get_current_time():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')

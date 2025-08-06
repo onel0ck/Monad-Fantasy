@@ -3440,10 +3440,9 @@ class FantasyAPI:
             "Sec-Fetch-Site": "same-site",
         }
         sleep(REQUESTS_DELAY)
-        response = self.session.post(
+        response = self.session.get(
             f"https://secret-api.fantasy.top/card/player-all-cards/{wallet_address}?pagination.page=1&pagination.limit=50&orderBy=cards_score_asc&where.rarity.in=4&where.is_in_deck=false",
             headers=headers,
-            data="",
             proxies=self.proxies,
             timeout=15,
         )
@@ -3451,7 +3450,87 @@ class FantasyAPI:
         if response.status_code != 200:
             error_log(response.text)
             return False
+        cards = response.json()["data"]
 
-        data = response.json()
-        print(data)
-        return False
+        def get_score(card):
+            try:
+                return int(card.get("expected_score", 999))
+            except (ValueError, TypeError):
+                return 999
+
+        sorted_cards = sorted(cards, key=get_score, reverse=True)
+        min_card = sorted_cards[0]
+        info_log(
+            f'Min score: {min_card.get("expected_score", -1)} token_id: {min_card.get("token_id", "")}',
+        )
+        if float(min_card.get("expected_score", -1)) > 200:
+            info_log("Min card score is too high, skip burning")
+            return False
+        token_id = int(min_card.get("token_id", ""))
+        contract_method_data = "0x7bad238000000000000000000000000004edb399cc24a95672bf9b880ee550de0b2d0b1e00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001" + hex(
+            token_id
+        )[2:].zfill(
+            64
+        )
+
+        monad_web3 = Web3(Web3.HTTPProvider(self.config["monad_rpc"]["url"]))
+
+        contract_address = "0x9077D31A794D81c21b0650974d5F581F4000CD1a"
+
+        nonce_response = monad_web3.eth.get_transaction_count(
+            wallet_address, "pending"
+        )
+
+        gas_price = monad_web3.eth.gas_price
+        max_priority_fee = monad_web3.to_wei(1.5, "gwei")
+        max_fee_per_gas = gas_price * 2
+
+        transaction = {
+            "nonce": nonce_response,
+            "to": monad_web3.to_checksum_address(contract_address),
+            "value": 0,
+            "gas": 80000,
+            "maxFeePerGas": max_fee_per_gas,
+            "maxPriorityFeePerGas": max_priority_fee,
+            "data": contract_method_data,
+            "type": 2,
+            "chainId": 10143,
+        }
+
+        private_key = self.account_storage.get_account_data(wallet_address)[
+            "private_key"
+        ]
+
+        try:
+            account = monad_web3.eth.account.from_key(private_key)
+            signed_txn = account.sign_transaction(transaction)
+            tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            tx_hash_hex = tx_hash.hex()
+            debug_log(f"Transaction sent: {tx_hash_hex}")
+
+            receipt = None
+            retries = 10
+            while retries > 0 and receipt is None:
+                try:
+                    receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
+                except Exception:
+                    sleep(2)
+                    retries -= 1
+
+            if receipt and receipt["status"] == 1:
+                success_log(
+                    f"Transaction confirmed for account {account_number}: {tx_hash_hex}"
+                )
+            else:
+                error_log(
+                    f"Transaction failed or timed out for account {account_number}"
+                )
+                return False
+        except Exception as e:
+            error_log(
+                f"Error signing or sending transaction for account {account_number}: {str(e)}"
+            )
+            return False
+
+        sleep(2)
+        return True 
