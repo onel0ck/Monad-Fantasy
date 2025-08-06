@@ -2144,6 +2144,217 @@ class FantasyAPI:
             )
             return 0
 
+    def get_player_cards_for_burn(self, token, wallet_address, account_number):
+        try:
+            privy_id_token = self._get_privy_token_id()
+            auth_token = privy_id_token if privy_id_token else token
+
+            headers = {
+                "Accept": "application/json, text/plain, */*",
+                "Authorization": f"Bearer {auth_token}",
+                "Origin": "https://monad.fantasy.top",
+                "Referer": "https://monad.fantasy.top/",
+                "User-Agent": self.user_agent,
+                "sec-ch-ua": get_sec_ch_ua(self.user_agent),
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": get_platform(self.user_agent),
+            }
+
+            all_cards = []
+            page = 1
+            
+            while True:
+                params = {
+                    "pagination.page": page,
+                    "pagination.limit": 100,
+                    "orderBy": "cards_score_asc",
+                    "where.rarity.in": [1, 2, 3, 4],
+                    "where.is_in_deck": "false",
+                    "groupCard": "true",
+                    "isGalleryView": "false"
+                }
+
+                response = self.session.get(
+                    f"https://secret-api.fantasy.top/card/player-all-cards/{wallet_address}",
+                    headers=headers,
+                    params=params,
+                    proxies=self.proxies,
+                    timeout=15,
+                )
+
+                if response.status_code == 401 and auth_token == privy_id_token and token:
+                    auth_token = token
+                    headers["Authorization"] = f"Bearer {auth_token}"
+                    continue
+
+                if response.status_code != 200:
+                    error_log(f"Failed to fetch cards for burn: {response.status_code}")
+                    return []
+
+                data = response.json()
+                if not data.get("data"):
+                    break
+
+                for card in data.get("data", []):
+                    if not card.get("is_in_deck", False):
+                        card_info = {
+                            "id": card.get("id"),
+                            "token_id": card.get("token_id"),
+                            "hero_id": card.get("hero_id"),
+                            "name": card.get("name", card.get("heroes", {}).get("name", "Unknown")),
+                            "stars": int(card.get("stars", card.get("heroes", {}).get("stars", 0))),
+                            "rarity": int(card.get("rarity", card.get("heroes", {}).get("rarity", 0))),
+                            "card_weighted_score": int(card.get("card_weighted_score", 0)),
+                            "card_number": int(card.get("card_number", 1)),
+                            "in_deck_number": int(card.get("in_deck_number", 0))
+                        }
+                        all_cards.append(card_info)
+
+                meta = data.get("meta", {})
+                if meta.get("currentPage", 0) >= meta.get("lastPage", 0):
+                    break
+                page += 1
+
+            return all_cards
+
+        except Exception as e:
+            error_log(f"Error fetching cards for burn: {str(e)}")
+            return []
+
+    def select_cards_to_burn(self, cards, min_cards, max_cards, min_stars, max_stars, burn_duplicates):
+        try:
+            cards_to_burn = []
+            
+            eligible_cards = [
+                card for card in cards 
+                if min_stars <= card["stars"] <= max_stars
+            ]
+            
+            if not eligible_cards:
+                info_log("No cards found within the specified star range")
+                return []
+
+            if burn_duplicates:
+                card_groups = {}
+                for card in eligible_cards:
+                    hero_id = card["hero_id"]
+                    if hero_id not in card_groups:
+                        card_groups[hero_id] = []
+                    card_groups[hero_id].append(card)
+                
+                for hero_id, group in card_groups.items():
+                    if len(group) > 1:
+                        sorted_group = sorted(group, key=lambda x: x["card_weighted_score"], reverse=True)
+                        cards_to_burn.extend(sorted_group[1:])
+                        
+                        if len(cards_to_burn) >= max_cards:
+                            break
+            
+            if len(cards_to_burn) < min_cards:
+                remaining_eligible = [
+                    card for card in eligible_cards 
+                    if card not in cards_to_burn
+                ]
+                sorted_remaining = sorted(
+                    remaining_eligible, 
+                    key=lambda x: (x["stars"], x["card_weighted_score"])
+                )
+                
+                needed_cards = min_cards - len(cards_to_burn)
+                cards_to_burn.extend(sorted_remaining[:needed_cards])
+            
+            cards_to_burn = cards_to_burn[:max_cards]
+            
+            return cards_to_burn
+
+        except Exception as e:
+            error_log(f"Error selecting cards to burn: {str(e)}")
+            return []
+
+    def burn_cards(self, token, wallet_address, account_number, private_key, card_token_ids):
+        try:
+            if not card_token_ids:
+                info_log(f"No cards to burn for account {account_number}")
+                return False
+
+            monad_web3 = Web3(Web3.HTTPProvider(self.config["monad_rpc"]["url"]))
+            contract_address = monad_web3.to_checksum_address(
+                self.config["burn_cards"]["contract_address"]
+            )
+            wallet_address_checksum = monad_web3.to_checksum_address(wallet_address)
+
+            # Check balance
+            balance = monad_web3.eth.get_balance(wallet_address_checksum)
+            min_required = monad_web3.to_wei(0.01, "ether")
+            
+            if balance < min_required:
+                error_log(f"Insufficient balance for burn transaction: {monad_web3.from_wei(balance, 'ether')} MONAD")
+                return False
+
+            nonce = monad_web3.eth.get_transaction_count(wallet_address_checksum, "pending")
+
+            method_id = "0x7bad2380"
+            
+            erc721_address = "0x04edb399cc24a95672bf9b880ee550de0b2d0b1e"
+            erc721_padded = "000000000000000000000000" + erc721_address[2:].lower()
+            
+            array_offset = "0000000000000000000000000000000000000000000000000000000000000040"
+            
+            array_length = hex(len(card_token_ids))[2:].zfill(64)
+            
+            token_ids_data = ""
+            for token_id in card_token_ids:
+                token_id_hex = hex(int(token_id))[2:].zfill(64)
+                token_ids_data += token_id_hex
+            
+            calldata = method_id + erc721_padded + array_offset + array_length + token_ids_data
+
+            gas_limit = 100000 + (20000 * len(card_token_ids))
+            
+            gas_price = monad_web3.eth.gas_price
+            max_priority_fee = monad_web3.to_wei(1.5, "gwei")
+            max_fee_per_gas = gas_price * 2
+
+            transaction = {
+                "nonce": nonce,
+                "to": contract_address,
+                "value": 0,
+                "gas": gas_limit,
+                "maxFeePerGas": max_fee_per_gas,
+                "maxPriorityFeePerGas": max_priority_fee,
+                "data": calldata,
+                "type": 2,
+                "chainId": 10143,
+            }
+
+            account = monad_web3.eth.account.from_key(private_key)
+            signed_txn = account.sign_transaction(transaction)
+            tx_hash = monad_web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+            tx_hash_hex = tx_hash.hex()
+            
+            info_log(f"Burn transaction sent for account {account_number}: {tx_hash_hex}")
+
+            receipt = None
+            for attempt in range(20):
+                try:
+                    receipt = monad_web3.eth.get_transaction_receipt(tx_hash)
+                    if receipt:
+                        break
+                except Exception:
+                    pass
+                sleep(3)
+
+            if receipt and receipt["status"] == 1:
+                success_log(f"Successfully burned {len(card_token_ids)} cards for account {account_number}")
+                return True
+            else:
+                error_log(f"Burn transaction failed for account {account_number}")
+                return False
+
+        except Exception as e:
+            error_log(f"Error burning cards for account {account_number}: {str(e)}")
+            return False
+
     def _update_fragments_count(self, wallet_address, new_count):
         try:
             result_file = self.config["app"]["result_file"]
