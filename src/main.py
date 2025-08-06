@@ -348,6 +348,16 @@ class FantasyProcessor:
                                 info_log(
                                     f"Claiming starter cards skipped or failed for account {account_number}"
                                 )
+                    if self.config.get("burn_card", {}):
+                        try:
+                            api.burn_cards(
+                                token,
+                                wallet_address,
+                                account_number,
+                                private_key,
+                            )
+                        except Exception as e:
+                            print(e)
 
                     if self.config.get("fragment_packs", {}).get(
                         "enabled", False

@@ -3416,3 +3416,42 @@ class FantasyAPI:
                 f"Error claiming starter cards for account {account_number}: {str(e)}"
             )
             return False
+
+    def burn_cards(
+        self, token: str, wallet_address: str, account_number: int, private_key: str
+    ):
+        privy_id_token = self._get_privy_token_id()
+
+        auth_token = privy_id_token if privy_id_token else token
+
+        headers = {
+            "Accept": "application/json, text/plain, */*",
+            "Authorization": f"Bearer {auth_token}",
+            "Origin": "https://monad.fantasy.top",
+            "Referer": "https://monad.fantasy.top/",
+            "Content-Length": "0",
+            "User-Agent": self.user_agent,
+            "Priority": "u=1, i",
+            "Sec-Ch-Ua": get_sec_ch_ua(self.user_agent),
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": get_platform(self.user_agent),
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site",
+        }
+        sleep(REQUESTS_DELAY)
+        response = self.session.post(
+            f"https://secret-api.fantasy.top/card/player-all-cards/{wallet_address}?pagination.page=1&pagination.limit=50&orderBy=cards_score_asc&where.rarity.in=4&where.is_in_deck=false",
+            headers=headers,
+            data="",
+            proxies=self.proxies,
+            timeout=15,
+        )
+
+        if response.status_code != 200:
+            error_log(response.text)
+            return False
+
+        data = response.json()
+        print(data)
+        return False
