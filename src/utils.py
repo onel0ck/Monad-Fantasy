@@ -4,6 +4,7 @@ from datetime import datetime
 from colorama import Fore, init
 from itertools import cycle
 from time import sleep
+from eth_account import Account
 
 init(autoreset=True)
 
@@ -82,13 +83,33 @@ def read_accounts(file_path):
     unique_accounts = {}
     with open(file_path, 'r') as f:
         for line in f:
-            if line.strip():
-                try:
-                    private_key, wallet_address = line.strip().split(':')
-                    if wallet_address not in unique_accounts:
-                        unique_accounts[wallet_address] = private_key
-                except ValueError:
-                    continue
+            line = line.strip()
+            if not line:
+                continue
+                
+            try:
+                # Check if the line contains a private key and address
+                if ':' in line:
+                    private_key, _ = line.split(':')
+                    private_key = private_key.strip()
+                else:
+                    # If only a private key is provided, derive the address
+                    private_key = line
+                
+                # Ensure private key has 0x prefix
+                if not private_key.startswith('0x'):
+                    private_key = '0x' + private_key
+                
+                # Create account from private key
+                account = Account.from_key(private_key)
+                wallet_address = account.address
+                
+                # Store in dictionary
+                if wallet_address not in unique_accounts:
+                    unique_accounts[wallet_address] = private_key
+            except Exception as e:
+                info_log(f"Error processing account: {str(e)}")
+                continue
                     
     return [(i, (private_key, address)) 
             for i, (address, private_key) 
